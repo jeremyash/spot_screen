@@ -351,12 +351,13 @@ build_cache <- function() {
 }
 
 
-cache_obj <- build_cache()
-tmp_file <- "cache/superfog_cache_tmp.rds"
-final_file <- "cache/superfog_cache.rds"
+# -------------------------------------------------
+# GENERATE AND SAVE CACHE
+# -------------------------------------------------
 
-saveRDS(cache_obj, tmp_file)
-file.rename(tmp_file, final_file)
+cache_obj <- build_cache()
+saveRDS(cache_obj, "cache/superfog_cache.rds")
+
 
 log_msg("Cache updated successfully at", as.character(cache_obj$last_refresh))
 
