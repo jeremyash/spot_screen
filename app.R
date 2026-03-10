@@ -5,6 +5,7 @@ library(tidyverse)
 library(lubridate)
 library(kableExtra)
 library(sf)
+library(httr2)
 
 # -------------------------------------------------
 # STATIC DATA
@@ -20,21 +21,18 @@ r8 <- st_read("region_8", quiet = TRUE) |>
 
 r8_forests$forest_id <- seq_len(nrow(r8_forests))
 
-cache_file <- "cache/superfog_cache.rds"
+cache_url <- "https://raw.githubusercontent.com/jeremyash/spot_screen/cache-data/cache/superfog_cache.rds"
 
-load_cache <- function(path = cache_file) {
-  if (!file.exists(path)) {
-    return(list(
-      forecast_df = tibble(),
-      sfog_tables = list(),
-      last_refresh = as.POSIXct(NA)
-    ))
-  }
+download_remote_cache <- function(url) {
+  tf <- tempfile(fileext = ".rds")
+  resp <- request(url) |>
+    req_perform()
   
-  x <- readRDS(path)
+  writeBin(resp_body_raw(resp), tf)
+  x <- readRDS(tf)
   
   if (!all(c("forecast_df", "sfog_tables", "last_refresh") %in% names(x))) {
-    stop("Cache file is missing one or more required objects: forecast_df, sfog_tables, last_refresh")
+    stop("Remote cache is missing one or more required objects: forecast_df, sfog_tables, last_refresh")
   }
   
   x
@@ -263,10 +261,24 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
-  cache_data <- reactiveVal(load_cache())
+  remote_cache <- reactivePoll(
+    intervalMillis = 5 * 60 * 1000,
+    session = NULL,
+    checkFunc = function() {
+      resp <- request(cache_url) |>
+        req_method("HEAD") |>
+        req_perform()
+      
+      headers <- resp_headers(resp)
+      headers[["last-modified"]] %||% as.character(Sys.time())
+    },
+    valueFunc = function() {
+      download_remote_cache(cache_url)
+    }
+  )
   
   output$last_refresh_text <- renderText({
-    lr <- cache_data()$last_refresh
+    lr <- remote_cache()$last_refresh
     if (is.na(lr)) {
       "Last refreshed: cache not available"
     } else {
@@ -278,7 +290,7 @@ server <- function(input, output, session) {
   })
   
   output$forecast_map <- renderLeaflet({
-    df <- cache_data()$forecast_df
+    df <- remote_cache()$forecast_df
     
     m <- leaflet() |>
       addTiles() |>
@@ -427,8 +439,8 @@ server <- function(input, output, session) {
       )
     }
     
-    forecast_df <- cache_data()$forecast_df
-    sfog_tables <- cache_data()$sfog_tables
+    forecast_df <- remote_cache()$forecast_df
+    sfog_tables <- remote_cache()$sfog_tables
     
     idx <- which(forecast_df$spot_id == click$id)
     
