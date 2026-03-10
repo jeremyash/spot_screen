@@ -1,4 +1,17 @@
 # -------------------------------
+# LIBRARIES
+# -------------------------------
+
+library(tidyverse)
+library(lubridate)
+library(kableExtra)
+library(lutz)
+library(httr2)
+library(jsonlite)
+library(sf)
+
+
+# -------------------------------
 # LOG MESSAGING
 # -------------------------------
 Sys.setenv(TZ = "America/New_York")
@@ -50,19 +63,6 @@ log_msg("Starting cache update")
 log_msg(paste("Working directory:", getwd()))
 log_msg(paste("Lock file:", normalizePath(lockfile, winslash = "/", mustWork = FALSE)))
 
-
-
-# -------------------------------
-# LIBRARIES
-# -------------------------------
-
-library(tidyverse)
-library(lubridate)
-library(kableExtra)
-library(lutz)
-library(httr2)
-library(jsonlite)
-library(sf)
 
 
 # -------------------------------
