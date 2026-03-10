@@ -25,6 +25,7 @@ cache_url <- "https://raw.githubusercontent.com/jeremyash/spot_screen/cache-data
 
 download_remote_cache <- function(url) {
   tf <- tempfile(fileext = ".rds")
+  
   resp <- request(url) |>
     req_perform()
   
@@ -82,6 +83,7 @@ ui <- fluidPage(
   ")),
   
   tabsetPanel(
+    id = "main_tabs",
     
     tabPanel(
       "Map",
@@ -89,7 +91,7 @@ ui <- fluidPage(
       fluidRow(
         
         column(
-          8,
+          7,
           
           leafletOutput("forecast_map", height = "650px"),
           
@@ -109,7 +111,7 @@ ui <- fluidPage(
         ),
         
         column(
-          4,
+          5,
           
           div(
             style = "
@@ -120,7 +122,39 @@ ui <- fluidPage(
               padding-right:10px;
             ",
             
-            uiOutput("selected_info")
+            uiOutput("selected_info_map")
+          )
+        )
+      )
+    ),
+    
+    tabPanel(
+      "Table",
+      
+      fluidRow(
+        
+        column(
+          5,
+          
+          div(
+            style = "max-width:1200px; margin:auto; padding-top:15px;",
+            uiOutput("burn_table_grouped")
+          )
+        ),
+        
+        column(
+          7,
+          
+          div(
+            style = "
+              height:650px;
+              overflow-y:auto;
+              border-left:1px solid #d9d9d9;
+              padding-left:15px;
+              padding-right:10px;
+            ",
+            
+            uiOutput("selected_info_table")
           )
         )
       )
@@ -277,8 +311,50 @@ server <- function(input, output, session) {
     }
   )
   
+  selected_burn_id <- reactiveVal(NULL)
+  
+  observeEvent(input$main_tabs, {
+    selected_burn_id(NULL)
+  })
+  
+  # -------------------------------------------------
+  # PRECOMPUTE BURNS + FOREST JOIN ONCE PER CACHE REFRESH
+  # -------------------------------------------------
+  
+  burns_with_forest <- reactive({
+    forecast_df <- remote_cache()$forecast_df
+    
+    if (nrow(forecast_df) == 0 || !all(c("lon", "lat") %in% names(forecast_df))) {
+      return(tibble())
+    }
+    
+    burns_sf <- st_as_sf(
+      forecast_df,
+      coords = c("lon", "lat"),
+      crs = 4326,
+      remove = FALSE
+    )
+    
+    joined <- st_join(
+      burns_sf,
+      r8_forests[, c("forest_id", "forest")],
+      join = st_intersects,
+      left = TRUE
+    )
+    
+    joined |>
+      st_drop_geometry() |>
+      mutate(forest = if_else(is.na(forest), "Not matched", forest)) |>
+      arrange(forest, project_name)
+  })
+  
+  # -------------------------------------------------
+  # LAST REFRESH
+  # -------------------------------------------------
+  
   output$last_refresh_text <- renderText({
     lr <- remote_cache()$last_refresh
+    
     if (is.na(lr)) {
       "Last refreshed: cache not available"
     } else {
@@ -288,6 +364,10 @@ server <- function(input, output, session) {
       )
     }
   })
+  
+  # -------------------------------------------------
+  # MAP
+  # -------------------------------------------------
   
   output$forecast_map <- renderLeaflet({
     df <- remote_cache()$forecast_df
@@ -387,6 +467,8 @@ server <- function(input, output, session) {
   observeEvent(input$forecast_map_marker_click, {
     click <- input$forecast_map_marker_click
     
+    selected_burn_id(click$id)
+    
     leafletProxy("forecast_map") |>
       setView(
         lng = click$lng,
@@ -420,10 +502,18 @@ server <- function(input, output, session) {
       )
   })
   
-  output$selected_info <- renderUI({
-    click <- input$forecast_map_marker_click
+  # -------------------------------------------------
+  # TABLE
+  # -------------------------------------------------
+  
+  observeEvent(input$table_burn_click, {
+    selected_burn_id(input$table_burn_click)
+  })
+  
+  output$burn_table_grouped <- renderUI({
+    burns_tbl <- burns_with_forest()
     
-    if (is.null(click)) {
+    if (nrow(burns_tbl) == 0) {
       return(
         div(
           style = "
@@ -434,7 +524,128 @@ server <- function(input, output, session) {
             text-align:center;
             font-size:18px;
           ",
-          "Click a fire icon on the map to view superfog screening results."
+          "No cached burns available."
+        )
+      )
+    }
+    
+    forest_groups <- split(burns_tbl, burns_tbl$forest)
+    
+    tagList(
+      lapply(names(forest_groups), function(forest_name) {
+        forest_df <- forest_groups[[forest_name]]
+        
+        tagList(
+          div(
+            style = "
+              margin-top:18px;
+              margin-bottom:10px;
+              padding:10px 14px;
+              background:#f2f2f2;
+              border-left:5px solid #228B22;
+              font-weight:bold;
+              font-size:20px;
+            ",
+            forest_name
+          ),
+          
+          tags$table(
+            style = "
+              width:100%;
+              border-collapse:collapse;
+              margin-bottom:20px;
+              font-size:16px;
+            ",
+            
+            tags$thead(
+              tags$tr(
+                tags$th(
+                  style = "
+                    text-align:left;
+                    padding:10px;
+                    border-bottom:2px solid #cccccc;
+                  ",
+                  "Burn Name"
+                )
+              )
+            ),
+            
+            tags$tbody(
+              lapply(seq_len(nrow(forest_df)), function(i) {
+                
+                is_selected <- identical(selected_burn_id(), forest_df$spot_id[i])
+                
+                bg_color <- if (is_selected) "#e8f4ea" else "transparent"
+                border_color <- if (is_selected) "#228B22" else "transparent"
+                text_color <- if (is_selected) "#000000" else "#1a1a1a"
+                font_weight <- if (is_selected) "700" else "500"
+                
+                tags$tr(
+                  style = "
+                    border-bottom:1px solid #e6e6e6;
+                  ",
+                  
+                  tags$td(
+                    style = "padding:0;",
+                    
+                    tags$a(
+                      href = "#",
+                      onclick = paste0(
+                        "Shiny.setInputValue('table_burn_click','",
+                        forest_df$spot_id[i],
+                        "', {priority: 'event'}); return false;"
+                      ),
+                      style = paste0(
+                        "display:block;",
+                        "padding:12px 10px;",
+                        "color:", text_color, ";",
+                        "text-decoration:none;",
+                        "font-weight:", font_weight, ";",
+                        "background-color:", bg_color, ";",
+                        "border-left:5px solid ", border_color, ";"
+                      ),
+                      onmouseover = if (!is_selected) {
+                        "this.style.backgroundColor='#f5f5f5'; this.style.color='#000000';"
+                      } else {
+                        ""
+                      },
+                      onmouseout = if (!is_selected) {
+                        "this.style.backgroundColor='transparent'; this.style.color='#1a1a1a';"
+                      } else {
+                        ""
+                      },
+                      forest_df$project_name[i]
+                    )
+                  )
+                )
+              })
+            )
+          )
+        )
+      })
+    )
+  })
+  
+  # -------------------------------------------------
+  # INFO PANEL HELPERS
+  # -------------------------------------------------
+  
+  build_selected_info <- function(prompt_text) {
+    
+    clicked_id <- selected_burn_id()
+    
+    if (is.null(clicked_id)) {
+      return(
+        div(
+          style = "
+            margin-top:20px;
+            padding:15px;
+            border:2px dashed #cccccc;
+            background:#f9f9f9;
+            text-align:center;
+            font-size:18px;
+          ",
+          prompt_text
         )
       )
     }
@@ -442,7 +653,7 @@ server <- function(input, output, session) {
     forecast_df <- remote_cache()$forecast_df
     sfog_tables <- remote_cache()$sfog_tables
     
-    idx <- which(forecast_df$spot_id == click$id)
+    idx <- which(forecast_df$spot_id == clicked_id)
     
     if (length(idx) == 0) return(NULL)
     
@@ -569,6 +780,14 @@ server <- function(input, output, session) {
         span(style = "background-color:#D9D9D9;color:black;padding:8px 12px;margin-right:6px;font-weight:bold;", "Minimal Concern")
       )
     )
+  }
+  
+  output$selected_info_map <- renderUI({
+    build_selected_info("Click a fire icon on the map to view superfog screening results.")
+  })
+  
+  output$selected_info_table <- renderUI({
+    build_selected_info("Click a burn unit in the table to view superfog screening results.")
   })
 }
 
