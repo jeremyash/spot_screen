@@ -1,30 +1,39 @@
 # -------------------------------
 # LOG MESSAGING
 # -------------------------------
+Sys.setenv(TZ = "America/New_York")
 
 log_msg <- function(...) {
   cat(
     format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"),
     " - ",
-    ...,
+    paste(..., collapse = " "),
     "\n"
   )
 }
 
+log_msg("Starting cache update")
+
+
+
 # -------------------------------
 # SETUP TIMING FOR GITHUB ACTIONS
 # -------------------------------
+force_run <- identical(Sys.getenv("FORCE_RUN"), "true")
 
-Sys.setenv(TZ = "America/New_York")
-
-now_et <- as.POSIXct(format(Sys.time(), tz = "America/New_York", usetz = TRUE), tz = "America/New_York")
+now_et <- with_tz(Sys.time(), "America/New_York")
 hr <- lubridate::hour(now_et)
 mn <- lubridate::minute(now_et)
 
-if (!(hr >= 6 && hr <= 10 && mn %in% c(0, 30))) {
-  cat("Outside 06:00-10:00 ET half-hour window. Exiting.\n")
+if (!force_run && !(hr >= 6 && hr <= 10 && mn %in% c(0, 30))) {
+  log_msg("Outside 06:00-10:00 ET half-hour window. Exiting.")
   quit(save = "no", status = 0)
 }
+
+if (force_run) {
+  log_msg("FORCE_RUN detected. Bypassing time window.")
+}
+
 
 # -------------------------------
 # PREVENT OVERLAPPING RUNS
