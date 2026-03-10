@@ -61,8 +61,6 @@ dir.create("cache", showWarnings = FALSE)
 
 log_msg("Starting cache update")
 log_msg(paste("Working directory:", getwd()))
-log_msg(paste("Lock file:", normalizePath(lockfile, winslash = "/", mustWork = FALSE)))
-
 
 
 # -------------------------------
