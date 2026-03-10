@@ -1,41 +1,51 @@
 # -------------------------------
+# LOG MESSAGING
+# -------------------------------
+
+log_msg <- function(...) {
+  cat(
+    format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"),
+    " - ",
+    ...,
+    "\n"
+  )
+}
+
+# -------------------------------
+# SETUP TIMING FOR GITHUB ACTIONS
+# -------------------------------
+
+Sys.setenv(TZ = "America/New_York")
+
+now_et <- as.POSIXct(format(Sys.time(), tz = "America/New_York", usetz = TRUE), tz = "America/New_York")
+hr <- lubridate::hour(now_et)
+mn <- lubridate::minute(now_et)
+
+if (!(hr >= 6 && hr <= 10 && mn %in% c(0, 30))) {
+  cat("Outside 06:00-10:00 ET half-hour window. Exiting.\n")
+  quit(save = "no", status = 0)
+}
+
+# -------------------------------
 # PREVENT OVERLAPPING RUNS
 # -------------------------------
 
 dir.create("cache", showWarnings = FALSE)
 
-lockfile <- "cache/update_cache.lock"
-max_lock_age_mins <- 120
-
-if (file.exists(lockfile)) {
-  lock_age_mins <- as.numeric(
-    difftime(Sys.time(), file.info(lockfile)$mtime, units = "mins")
-  )
-  
-  if (!is.na(lock_age_mins) && lock_age_mins > max_lock_age_mins) {
-    cat("Stale lock file found. Removing it.\n")
-    unlink(lockfile)
-  } else {
-    cat("Another cache update is already running. Exiting.\n")
-    quit(save = "no", status = 0)
-  }
-}
-
-file.create(lockfile)
 
 # -------------------------------
 # TIMESTAMPED LOGGING
 # -------------------------------
 
-log_msg <- function(...) {
-  cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), " - ", ..., "\n")
-}
-
 log_msg("Starting cache update")
 log_msg(paste("Working directory:", getwd()))
 log_msg(paste("Lock file:", normalizePath(lockfile, winslash = "/", mustWork = FALSE)))
 
-tryCatch({
+
+
+# -------------------------------
+# LIBRARIES
+# -------------------------------
 
 library(tidyverse)
 library(lubridate)
@@ -44,11 +54,6 @@ library(lutz)
 library(httr2)
 library(jsonlite)
 library(sf)
-
-
-
-Sys.setenv(TZ = "America/New_York")
-
 
 
 # -------------------------------
@@ -345,7 +350,6 @@ build_cache <- function() {
   )
 }
 
-dir.create("cache", showWarnings = FALSE)
 
 cache_obj <- build_cache()
 tmp_file <- "cache/superfog_cache_tmp.rds"
@@ -362,11 +366,5 @@ log_msg("Cache updated successfully at", as.character(cache_obj$last_refresh))
   log_msg(paste("Cache update failed:", conditionMessage(e)))
   quit(save = "no", status = 1)
   
-}, finally = {
+}
   
-  if (file.exists(lockfile)) {
-    unlink(lockfile)
-    log_msg("Lock file removed")
-  }
-  
-})
