@@ -61,6 +61,8 @@ jobs:
 
       - name: Run cache builder
         working-directory: main-repo
+        env:
+          FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
         run: Rscript update_cache.R
 
       - name: Copy generated cache to cache branch checkout
