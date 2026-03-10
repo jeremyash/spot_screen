@@ -361,10 +361,3 @@ file.rename(tmp_file, final_file)
 log_msg("Cache updated successfully at", as.character(cache_obj$last_refresh))
 
 
-}, error = function(e) {
-  
-  log_msg(paste("Cache update failed:", conditionMessage(e)))
-  quit(save = "no", status = 1)
-  
-}
-  
