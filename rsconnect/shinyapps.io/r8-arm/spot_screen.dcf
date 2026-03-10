@@ -1,0 +1,10 @@
+name: spot_screen
+title:
+username: r8-arm
+account: r8-arm
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 16862951
+bundleId: 11690153
+url: https://r8-arm.shinyapps.io/spot_screen/
+version: 1
