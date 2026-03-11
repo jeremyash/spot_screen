@@ -363,10 +363,14 @@ build_cache <- function() {
 # -------------------------------------------------
 
 cache_obj <- build_cache()
+
+dir.create("cache", showWarnings = FALSE, recursive = TRUE)
+
+log_msg("About to save cache with last_refresh =", as.character(cache_obj$last_refresh))
+
 saveRDS(cache_obj, "cache/superfog_cache.rds")
-
-
-log_msg("Cache updated successfully at", as.character(cache_obj$last_refresh))
 
 check_obj <- readRDS("cache/superfog_cache.rds")
 log_msg("Read-back cache last_refresh =", as.character(check_obj$last_refresh))
+
+log_msg("Cache updated successfully at", as.character(cache_obj$last_refresh))
