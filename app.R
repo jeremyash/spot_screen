@@ -91,7 +91,7 @@ ui <- fluidPage(
       fluidRow(
         
         column(
-          7,
+          8,
           
           leafletOutput("forecast_map", height = "650px"),
           
@@ -111,7 +111,7 @@ ui <- fluidPage(
         ),
         
         column(
-          5,
+          4,
           
           div(
             style = "
@@ -147,7 +147,7 @@ ui <- fluidPage(
           
           div(
             style = "
-              height:650px;
+              min-height:650px;
               overflow-y:auto;
               border-left:1px solid #d9d9d9;
               padding-left:15px;
@@ -538,13 +538,17 @@ server <- function(input, output, session) {
         tagList(
           div(
             style = "
-              margin-top:18px;
-              margin-bottom:10px;
-              padding:10px 14px;
-              background:#f2f2f2;
-              border-left:5px solid #228B22;
-              font-weight:bold;
+              margin-top:20px;
+              margin-bottom:12px;
+              padding:12px 16px;
+              background:#f7faf7;
+              border:1px solid #d8e6d8;
+              border-left:6px solid #228B22;
+              border-radius:8px;
+              box-shadow:0 1px 3px rgba(0,0,0,0.05);
+              font-weight:700;
               font-size:20px;
+              color:#1f3b1f;
             ",
             forest_name
           ),
@@ -557,19 +561,6 @@ server <- function(input, output, session) {
               font-size:16px;
             ",
             
-            tags$thead(
-              tags$tr(
-                tags$th(
-                  style = "
-                    text-align:left;
-                    padding:10px;
-                    border-bottom:2px solid #cccccc;
-                  ",
-                  "Burn Name"
-                )
-              )
-            ),
-            
             tags$tbody(
               lapply(seq_len(nrow(forest_df)), function(i) {
                 
@@ -578,12 +569,23 @@ server <- function(input, output, session) {
                 bg_color <- if (is_selected) "#e8f4ea" else "transparent"
                 border_color <- if (is_selected) "#228B22" else "transparent"
                 text_color <- if (is_selected) "#000000" else "#1a1a1a"
-                font_weight <- if (is_selected) "700" else "500"
+                font_weight <- if (is_selected) "700" else "600"
                 
                 tags$tr(
                   style = "
                     border-bottom:1px solid #e6e6e6;
+                    cursor:pointer;
                   ",
+                  onmouseover = if (!is_selected) {
+                    "this.style.backgroundColor='#f5f5f5';"
+                  } else {
+                    ""
+                  },
+                  onmouseout = if (!is_selected) {
+                    "this.style.backgroundColor='transparent';"
+                  } else {
+                    ""
+                  },
                   
                   tags$td(
                     style = "padding:0;",
@@ -604,16 +606,6 @@ server <- function(input, output, session) {
                         "background-color:", bg_color, ";",
                         "border-left:5px solid ", border_color, ";"
                       ),
-                      onmouseover = if (!is_selected) {
-                        "this.style.backgroundColor='#f5f5f5'; this.style.color='#000000';"
-                      } else {
-                        ""
-                      },
-                      onmouseout = if (!is_selected) {
-                        "this.style.backgroundColor='transparent'; this.style.color='#1a1a1a';"
-                      } else {
-                        ""
-                      },
                       forest_df$project_name[i]
                     )
                   )
