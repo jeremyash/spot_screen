@@ -1,19 +1,20 @@
+# update_cache.R
+
 # -------------------------------
 # LIBRARIES
 # -------------------------------
 
 library(tidyverse)
 library(lubridate)
-library(kableExtra)
 library(lutz)
 library(httr2)
 library(jsonlite)
 library(sf)
 
-
 # -------------------------------
 # LOG MESSAGING
 # -------------------------------
+
 Sys.setenv(TZ = "America/New_York")
 
 log_msg <- function(...) {
@@ -27,11 +28,10 @@ log_msg <- function(...) {
 
 log_msg("Starting cache update")
 
-
-
 # -------------------------------
 # GITHUB ACTIONS RUN MODE
 # -------------------------------
+
 force_run <- identical(Sys.getenv("FORCE_RUN"), "true")
 
 if (force_run) {
@@ -40,25 +40,18 @@ if (force_run) {
   log_msg("Scheduled run detected.")
 }
 
-
 # -------------------------------
-# PREVENT OVERLAPPING RUNS
-# -------------------------------
-
-dir.create("cache", showWarnings = FALSE)
-
-
-# -------------------------------
-# TIMESTAMPED LOGGING
+# ENSURE CACHE DIRECTORY EXISTS
 # -------------------------------
 
-log_msg("Starting cache update")
+dir.create("cache", showWarnings = FALSE, recursive = TRUE)
+
 log_msg(paste("Working directory:", getwd()))
-
 
 # -------------------------------
 # STATIC DATA
 # -------------------------------
+
 wfo <- read_csv("r8_wfo.csv", show_col_types = FALSE)
 
 r8_forests <- st_read("r8_forests", quiet = TRUE) |>
@@ -72,11 +65,29 @@ r8_forests$forest_id <- seq_len(nrow(r8_forests))
 fws_nws_base_url <- "https://api.weather.gov/products/types/FWS"
 stq_nws_base_url <- "https://api.weather.gov/products/types/STQ"
 
+cache_path <- "cache/superfog_cache.rds"
+
+# -------------------------------
+# EMPTY CACHE HELPER
+# -------------------------------
+
+empty_cache <- function() {
+  list(
+    forecast_df = tibble(),
+    sfog_tables = list(),
+    last_refresh = Sys.time()
+  )
+}
+
 # -------------------------------
 # API HELPERS
 # -------------------------------
+
 spot_df_fun <- function(SPOT_URL) {
-  spot_api_ls <- request(SPOT_URL) %>% req_perform() %>% resp_body_json()
+  spot_api_ls <- request(SPOT_URL) %>%
+    req_perform() %>%
+    resp_body_json()
+  
   as.data.frame(spot_api_ls[2:9]) %>%
     mutate(
       spot_id = str_extract(productText, "(?<=\\.TAG\\s)[0-9.]+"),
@@ -87,15 +98,18 @@ spot_df_fun <- function(SPOT_URL) {
 }
 
 stq_df_fun <- function(STQ_URL) {
-  stq_api_ls <- request(STQ_URL) %>% req_perform() %>% resp_body_json()
+  stq_api_ls <- request(STQ_URL) %>%
+    req_perform() %>%
+    resp_body_json()
+  
   as.data.frame(stq_api_ls[2:9]) %>%
     mutate(
-      spot_id = str_match(productText, "OFILE:\\s*([0-9.]+)")[,2],
-      project_name = str_match(productText, "PROJECT NAME:\\s*([^\\n]+)")[,2],
-      lat = as.numeric(str_match(productText, "DLAT:\\s*(-?[0-9.]+)")[,2]),
-      lon = -abs(as.numeric(str_match(productText, "DLON:\\s*(-?[0-9.]+)")[,2])),
-      date = str_match(productText, "DATE:\\s*(\\d{2}/\\d{2}/\\d{2})")[,2],
-      time = str_match(productText, "TIME:\\s*(\\d{4})")[,2]
+      spot_id = str_match(productText, "OFILE:\\s*([0-9.]+)")[, 2],
+      project_name = str_match(productText, "PROJECT NAME:\\s*([^\\n]+)")[, 2],
+      lat = as.numeric(str_match(productText, "DLAT:\\s*(-?[0-9.]+)")[, 2]),
+      lon = -abs(as.numeric(str_match(productText, "DLON:\\s*(-?[0-9.]+)")[, 2])),
+      date = str_match(productText, "DATE:\\s*(\\d{2}/\\d{2}/\\d{2})")[, 2],
+      time = str_match(productText, "TIME:\\s*(\\d{4})")[, 2]
     ) %>%
     filter(!is.na(spot_id))
 }
@@ -103,6 +117,7 @@ stq_df_fun <- function(STQ_URL) {
 # -------------------------------
 # TIME HELPER
 # -------------------------------
+
 convert_to_24hr <- function(time_str) {
   x <- toupper(trimws(time_str))
   x <- gsub("MID", "12AM", x, ignore.case = TRUE)
@@ -123,18 +138,26 @@ convert_to_24hr <- function(time_str) {
 # -------------------------------
 # SUPERFOG PARSING
 # -------------------------------
+
 parse_spot_forecasts <- function(df) {
-  map(1:nrow(df), function(i) {
+  if (nrow(df) == 0) return(list())
+  
+  map(seq_len(nrow(df)), function(i) {
     tryCatch({
       spot_txt <- df$productText[i]
-      spot_info <- df[i,]
+      spot_info <- df[i, ]
       
       spot_chunks <- strsplit(spot_txt, "\n\n")[[1]]
       time_chunks <- spot_chunks[grepl("^(TIME|[^\\n]*TIME)", spot_chunks)]
       
+      if (length(time_chunks) == 0) {
+        return(NULL)
+      }
+      
       time_dataframes <- lapply(seq_along(time_chunks), function(chunk_no) {
         chunk <- time_chunks[[chunk_no]]
         lines <- strsplit(chunk, "\n")[[1]]
+        
         time_line <- lines[grepl("^TIME", lines)]
         time_line <- gsub("\\(.*?\\)", "  ", time_line)
         time_line <- gsub("(\\d)\\s+(AM|PM)", "\\1\\2", time_line)
@@ -178,6 +201,7 @@ parse_spot_forecasts <- function(df) {
           colnames(chunk_df) <- headers
           chunk_df
         }))
+        
         out
       })
       
@@ -188,7 +212,7 @@ parse_spot_forecasts <- function(df) {
       t_all_times_df <- all_times_df[-1] %>%
         t() %>%
         as.data.frame() %>%
-        setNames(all_times_df[,1])
+        setNames(all_times_df[, 1])
       
       t_all_times_df <- t_all_times_df %>%
         mutate(
@@ -243,19 +267,27 @@ parse_spot_forecasts <- function(df) {
         )
       
       sfog_df
-      
-    }, error = function(e) NULL)
+    }, error = function(e) {
+      log_msg("parse_spot_forecasts failed for row", i, ":", e$message)
+      NULL
+    })
   })
 }
 
 # -------------------------------
 # BUILD CACHE
 # -------------------------------
+
 build_cache <- function() {
   today_val <- today(tzone = "America/New_York")
   
-  fws_ls <- request(fws_nws_base_url) %>% req_perform() %>% resp_body_json()
-  stq_ls <- request(stq_nws_base_url) %>% req_perform() %>% resp_body_json()
+  fws_ls <- request(fws_nws_base_url) %>%
+    req_perform() %>%
+    resp_body_json()
+  
+  stq_ls <- request(stq_nws_base_url) %>%
+    req_perform() %>%
+    resp_body_json()
   
   fws_df <- bind_rows(fws_ls$`@graph`) %>%
     mutate(issuingOffice = str_sub(issuingOffice, 2)) %>%
@@ -273,15 +305,39 @@ build_cache <- function() {
     mutate(date_issued = as.Date(ymd_hms(issuanceTime))) %>%
     filter(date_issued %in% c(today_val, today_val - 1))
   
+  log_msg("FWS products found:", nrow(fws_df))
+  log_msg("STQ products found:", nrow(stq_df))
+  
+  if (nrow(fws_df) == 0 || nrow(stq_df) == 0) {
+    log_msg("No FWS or STQ products found. Writing empty cache.")
+    return(empty_cache())
+  }
+  
   spot_api_df <- map_dfr(fws_df$api_url, spot_df_fun) %>%
     group_by(spot_id) %>%
     slice_max(order_by = issuanceTime, n = 1) %>%
     ungroup()
   
+  log_msg("FWS spot forecasts retained:", nrow(spot_api_df))
+  
+  if (nrow(spot_api_df) == 0) {
+    log_msg("No spot forecasts returned from FWS products. Writing empty cache.")
+    return(empty_cache())
+  }
+  
   request_api_df <- map_dfr(stq_df$api_url, stq_df_fun) %>%
     filter(spot_id %in% spot_api_df$spot_id) %>%
     select(spot_id:time) %>%
-    distinct() %>%
+    distinct()
+  
+  log_msg("Matching STQ requests retained:", nrow(request_api_df))
+  
+  if (nrow(request_api_df) == 0) {
+    log_msg("No matching STQ requests found. Writing empty cache.")
+    return(empty_cache())
+  }
+  
+  request_api_df <- request_api_df %>%
     mutate(tz = tz_lookup_coords(lat, lon, method = "accurate")) %>%
     rowwise() %>%
     mutate(
@@ -300,11 +356,17 @@ build_cache <- function() {
       nws_spot_url = paste0("https://spot.weather.gov/forecasts/", spot_id_clean)
     )
   
+  log_msg("Joined forecast rows:", nrow(forecast_df))
+  
+  if (nrow(forecast_df) == 0) {
+    log_msg("Joined forecast data is empty. Writing empty cache.")
+    return(empty_cache())
+  }
+  
   # -------------------------------------------------
   # FILTER TO REGION 8
   # -------------------------------------------------
   
-  # 1. cheap bounding-box filter first
   r8_bbox <- st_bbox(r8)
   
   forecast_df_bbox <- forecast_df %>%
@@ -315,7 +377,13 @@ build_cache <- function() {
       lat <= r8_bbox["ymax"]
     )
   
-  # 2. precise spatial filter only on bbox candidates
+  log_msg("After bbox filter:", nrow(forecast_df_bbox))
+  
+  if (nrow(forecast_df_bbox) == 0) {
+    log_msg("No forecasts inside Region 8 bounding box. Writing empty cache.")
+    return(empty_cache())
+  }
+  
   spots_sf <- st_as_sf(
     forecast_df_bbox,
     coords = c("lon", "lat"),
@@ -323,26 +391,26 @@ build_cache <- function() {
     remove = FALSE
   )
   
-  spots_sf <- spots_sf[
-    lengths(st_intersects(spots_sf, r8)) > 0,
-  ]
-  
+  spots_sf <- spots_sf[lengths(st_intersects(spots_sf, r8)) > 0, ]
   forecast_df <- st_drop_geometry(spots_sf)
   
-  log_msg("Total forecasts before Region 8 filter:", nrow(request_api_df))
-  log_msg("After bbox filter:", nrow(forecast_df_bbox))
-  log_msg("Inside Region 8:", nrow(forecast_df))
+  log_msg("Inside Region 8 polygon:", nrow(forecast_df))
   
+  if (nrow(forecast_df) == 0) {
+    log_msg("No forecasts inside Region 8 polygon. Writing empty cache.")
+    return(empty_cache())
+  }
   
   # -------------------------------------------------
   # CREATE PARSED SPOT TABLES
   # -------------------------------------------------
-  sfog_tables <- parse_spot_forecasts(forecast_df)
   
+  sfog_tables <- parse_spot_forecasts(forecast_df)
   
   # -------------------------------------------------
   # COMBINE OUTPUTS
   # -------------------------------------------------
+  
   list(
     forecast_df = forecast_df,
     sfog_tables = sfog_tables,
@@ -350,20 +418,32 @@ build_cache <- function() {
   )
 }
 
-
 # -------------------------------------------------
 # GENERATE AND SAVE CACHE
 # -------------------------------------------------
 
-cache_obj <- build_cache()
-
-dir.create("cache", showWarnings = FALSE, recursive = TRUE)
+cache_obj <- tryCatch(
+  build_cache(),
+  error = function(e) {
+    log_msg("Cache build failed:", e$message)
+    
+    if (file.exists(cache_path)) {
+      log_msg("Using existing cache file as fallback.")
+      fallback_cache <- readRDS(cache_path)
+      fallback_cache$last_refresh <- Sys.time()
+      fallback_cache
+    } else {
+      log_msg("No existing cache file found. Writing empty fallback cache.")
+      empty_cache()
+    }
+  }
+)
 
 log_msg("About to save cache with last_refresh =", as.character(cache_obj$last_refresh))
 
-saveRDS(cache_obj, "cache/superfog_cache.rds")
+saveRDS(cache_obj, cache_path)
 
-check_obj <- readRDS("cache/superfog_cache.rds")
+check_obj <- readRDS(cache_path)
 log_msg("Read-back cache last_refresh =", as.character(check_obj$last_refresh))
 
 log_msg("Cache updated successfully at", as.character(cache_obj$last_refresh))
