@@ -23,26 +23,11 @@ r8 <- st_read("region_8", quiet = TRUE) |>
 r8_forests$forest_id <- seq_len(nrow(r8_forests))
 
 cache_url <- "https://raw.githubusercontent.com/jeremyash/spot_screen/cache-data/cache/superfog_cache.rds"
-cache_sha_url <- "https://api.github.com/repos/jeremyash/spot_screen/commits/cache-data"
 
-get_cache_sha <- function(url) {
-  resp <- request(url) |>
-    req_perform()
-  
-  txt <- resp_body_string(resp)
-  jsonlite::fromJSON(txt)$sha
-}
-
-download_remote_cache <- function(url, sha = NULL) {
+download_remote_cache <- function(url) {
   tf <- tempfile(fileext = ".rds")
   
-  cache_busted_url <- if (is.null(sha)) {
-    url
-  } else {
-    paste0(url, "?sha=", sha)
-  }
-  
-  resp <- request(cache_busted_url) |>
+  resp <- request(url) |>
     req_perform()
   
   writeBin(resp_body_raw(resp), tf)
@@ -59,16 +44,16 @@ download_remote_cache <- function(url, sha = NULL) {
 # INITIAL CACHE LOAD
 # -------------------------------------------------
 
-initial_cache <- tryCatch({
-  initial_sha <- get_cache_sha(cache_sha_url)
-  download_remote_cache(cache_url, initial_sha)
-}, error = function(e) {
-  list(
-    forecast_df = tibble(),
-    sfog_tables = list(),
-    last_refresh = as.POSIXct(NA)
-  )
-})
+initial_cache <- tryCatch(
+  download_remote_cache(paste0(cache_url, "?t=", as.integer(Sys.time()))),
+  error = function(e) {
+    list(
+      forecast_df = tibble(),
+      sfog_tables = list(),
+      last_refresh = as.POSIXct(NA)
+    )
+  }
+)
 
 sfog_legend_box <- function(label, border, bg, text) {
   div(
@@ -168,8 +153,16 @@ ui <- fluidPage(
           5,
           
           div(
-            style = "max-width:1200px; margin:auto; padding-top:15px;",
-            uiOutput("burn_table_grouped")
+            style = "
+              height:650px;
+              overflow-y:auto;
+              padding-right:10px;
+            ",
+            
+            div(
+              style = "max-width:1200px; margin:auto; padding-top:15px;",
+              uiOutput("burn_table_grouped")
+            )
           )
         ),
         
@@ -178,7 +171,7 @@ ui <- fluidPage(
           
           div(
             style = "
-              min-height:650px;
+              height:650px;
               overflow-y:auto;
               border-left:1px solid #d9d9d9;
               padding-left:15px;
@@ -326,20 +319,17 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
-  remote_cache <- reactivePoll(
-    intervalMillis = 60 * 1000,
-    session = NULL,
-    checkFunc = function() {
-      get_cache_sha(cache_sha_url)
-    },
-    valueFunc = function() {
-      current_sha <- get_cache_sha(cache_sha_url)
-      download_remote_cache(cache_url, current_sha)
-    }
-  )
+  cache_data <- reactiveVal(initial_cache)
   
-  cache_data <- reactive({
-    remote_cache() %||% initial_cache
+  observe({
+    invalidateLater(60 * 1000, session)
+    
+    try({
+      fresh_cache <- download_remote_cache(
+        paste0(cache_url, "?t=", as.integer(Sys.time()))
+      )
+      cache_data(fresh_cache)
+    }, silent = TRUE)
   })
   
   selected_burn_id <- reactiveVal(NULL)
