@@ -30,21 +30,14 @@ log_msg("Starting cache update")
 
 
 # -------------------------------
-# SETUP TIMING FOR GITHUB ACTIONS
+# GITHUB ACTIONS RUN MODE
 # -------------------------------
 force_run <- identical(Sys.getenv("FORCE_RUN"), "true")
 
-now_et <- with_tz(Sys.time(), "America/New_York")
-hr <- lubridate::hour(now_et)
-mn <- lubridate::minute(now_et)
-
-if (!force_run && !(hr >= 6 && hr <= 10 && mn %in% c(0, 30))) {
-  log_msg("Outside 06:00-10:00 ET half-hour window. Exiting.")
-  quit(save = "no", status = 0)
-}
-
 if (force_run) {
-  log_msg("FORCE_RUN detected. Bypassing time window.")
+  log_msg("FORCE_RUN detected.")
+} else {
+  log_msg("Scheduled run detected.")
 }
 
 
