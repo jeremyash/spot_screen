@@ -25,10 +25,24 @@ r8_forests$forest_id <- seq_len(nrow(r8_forests))
 cache_url <- "https://raw.githubusercontent.com/jeremyash/spot_screen/cache-data/cache/superfog_cache.rds"
 cache_sha_url <- "https://api.github.com/repos/jeremyash/spot_screen/commits/cache-data"
 
-download_remote_cache <- function(url) {
+get_cache_sha <- function(url) {
+  resp <- request(url) |>
+    req_perform()
+  
+  txt <- resp_body_string(resp)
+  jsonlite::fromJSON(txt)$sha
+}
+
+download_remote_cache <- function(url, sha = NULL) {
   tf <- tempfile(fileext = ".rds")
   
-  resp <- request(url) |>
+  cache_busted_url <- if (is.null(sha)) {
+    url
+  } else {
+    paste0(url, "?sha=", sha)
+  }
+  
+  resp <- request(cache_busted_url) |>
     req_perform()
   
   writeBin(resp_body_raw(resp), tf)
@@ -41,28 +55,20 @@ download_remote_cache <- function(url) {
   x
 }
 
-get_cache_sha <- function(url) {
-  resp <- request(url) |>
-    req_perform()
-  
-  txt <- resp_body_string(resp)
-  jsonlite::fromJSON(txt)$sha
-}
-
 # -------------------------------------------------
 # INITIAL CACHE LOAD
 # -------------------------------------------------
 
-initial_cache <- tryCatch(
-  download_remote_cache(cache_url),
-  error = function(e) {
-    list(
-      forecast_df = tibble(),
-      sfog_tables = list(),
-      last_refresh = as.POSIXct(NA)
-    )
-  }
-)
+initial_cache <- tryCatch({
+  initial_sha <- get_cache_sha(cache_sha_url)
+  download_remote_cache(cache_url, initial_sha)
+}, error = function(e) {
+  list(
+    forecast_df = tibble(),
+    sfog_tables = list(),
+    last_refresh = as.POSIXct(NA)
+  )
+})
 
 sfog_legend_box <- function(label, border, bg, text) {
   div(
@@ -327,7 +333,8 @@ server <- function(input, output, session) {
       get_cache_sha(cache_sha_url)
     },
     valueFunc = function() {
-      download_remote_cache(cache_url)
+      current_sha <- get_cache_sha(cache_sha_url)
+      download_remote_cache(cache_url, current_sha)
     }
   )
   
