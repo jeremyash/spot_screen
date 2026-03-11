@@ -6,6 +6,7 @@ library(lubridate)
 library(kableExtra)
 library(sf)
 library(httr2)
+library(jsonlite)
 
 # -------------------------------------------------
 # STATIC DATA
@@ -22,6 +23,7 @@ r8 <- st_read("region_8", quiet = TRUE) |>
 r8_forests$forest_id <- seq_len(nrow(r8_forests))
 
 cache_url <- "https://raw.githubusercontent.com/jeremyash/spot_screen/cache-data/cache/superfog_cache.rds"
+cache_sha_url <- "https://api.github.com/repos/jeremyash/spot_screen/commits/cache-data"
 
 download_remote_cache <- function(url) {
   tf <- tempfile(fileext = ".rds")
@@ -38,6 +40,29 @@ download_remote_cache <- function(url) {
   
   x
 }
+
+get_cache_sha <- function(url) {
+  resp <- request(url) |>
+    req_perform()
+  
+  txt <- resp_body_string(resp)
+  jsonlite::fromJSON(txt)$sha
+}
+
+# -------------------------------------------------
+# INITIAL CACHE LOAD
+# -------------------------------------------------
+
+initial_cache <- tryCatch(
+  download_remote_cache(cache_url),
+  error = function(e) {
+    list(
+      forecast_df = tibble(),
+      sfog_tables = list(),
+      last_refresh = as.POSIXct(NA)
+    )
+  }
+)
 
 sfog_legend_box <- function(label, border, bg, text) {
   div(
@@ -299,17 +324,16 @@ server <- function(input, output, session) {
     intervalMillis = 60 * 1000,
     session = NULL,
     checkFunc = function() {
-      resp <- request(cache_url) |>
-        req_method("HEAD") |>
-        req_perform()
-      
-      headers <- resp_headers(resp)
-      headers[["last-modified"]] %||% as.character(Sys.time())
+      get_cache_sha(cache_sha_url)
     },
     valueFunc = function() {
       download_remote_cache(cache_url)
     }
   )
+  
+  cache_data <- reactive({
+    remote_cache() %||% initial_cache
+  })
   
   selected_burn_id <- reactiveVal(NULL)
   
@@ -322,7 +346,7 @@ server <- function(input, output, session) {
   # -------------------------------------------------
   
   burns_with_forest <- reactive({
-    forecast_df <- remote_cache()$forecast_df
+    forecast_df <- cache_data()$forecast_df
     
     if (nrow(forecast_df) == 0 || !all(c("lon", "lat") %in% names(forecast_df))) {
       return(tibble())
@@ -353,7 +377,7 @@ server <- function(input, output, session) {
   # -------------------------------------------------
   
   output$last_refresh_text <- renderText({
-    lr <- remote_cache()$last_refresh
+    lr <- cache_data()$last_refresh
     
     if (is.na(lr)) {
       "Last refreshed: cache not available"
@@ -370,7 +394,7 @@ server <- function(input, output, session) {
   # -------------------------------------------------
   
   output$forecast_map <- renderLeaflet({
-    df <- remote_cache()$forecast_df
+    df <- cache_data()$forecast_df
     
     m <- leaflet() |>
       addTiles() |>
@@ -642,8 +666,8 @@ server <- function(input, output, session) {
       )
     }
     
-    forecast_df <- remote_cache()$forecast_df
-    sfog_tables <- remote_cache()$sfog_tables
+    forecast_df <- cache_data()$forecast_df
+    sfog_tables <- cache_data()$sfog_tables
     
     idx <- which(forecast_df$spot_id == clicked_id)
     
