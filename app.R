@@ -40,6 +40,24 @@ download_remote_cache <- function(url) {
   x
 }
 
+offset_duplicate_points <- function(df, jitter_amount = 0.03) {
+  if (nrow(df) == 0) return(df)
+  
+  df %>%
+    group_by(lat, lon) %>%
+    mutate(
+      dup_n = n(),
+      dup_id = row_number()
+    ) %>%
+    ungroup() %>%
+    mutate(
+      angle = ifelse(dup_n == 1, 0, 2 * pi * (dup_id - 1) / dup_n),
+      offset_lon = ifelse(dup_n == 1, lon, lon + jitter_amount * cos(angle)),
+      offset_lat = ifelse(dup_n == 1, lat, lat + jitter_amount * sin(angle))
+    ) %>%
+    select(-dup_n, -dup_id, -angle)
+}
+
 # -------------------------------------------------
 # INITIAL CACHE LOAD
 # -------------------------------------------------
@@ -392,6 +410,7 @@ server <- function(input, output, session) {
   
   output$forecast_map <- renderLeaflet({
     df <- cache_data()$forecast_df
+    df_map <- offset_duplicate_points(df)
     
     m <- leaflet() |>
       addTiles() |>
@@ -426,29 +445,54 @@ server <- function(input, output, session) {
         )
       )
     
-    if (nrow(df) > 0 && all(c("lon", "lat") %in% names(df))) {
-      m <- m |>
-        addMarkers(
-          data = df,
-          lng = ~lon,
-          lat = ~lat,
-          layerId = ~spot_id,
-          label = ~project_name,
-          labelOptions = labelOptions(
-            style = list(
-              "font-size" = "14px",
-              "font-weight" = "bold",
-              "padding" = "6px 10px"
+    if (nrow(df_map) > 0 && all(c("lon", "lat") %in% names(df_map))) {
+      
+      df_today <- df_map %>% filter(issued == "Today")
+      df_yesterday <- df_map %>% filter(issued == "Yesterday")
+      
+      if (nrow(df_today) > 0) {
+        m <- m |>
+          addMarkers(
+            data = df_today,
+            lng = ~offset_lon,
+            lat = ~offset_lat,
+            layerId = ~spot_id,
+            label = ~project_name,
+            labelOptions = labelOptions(
+              style = list(
+                "font-size" = "14px",
+                "font-weight" = "bold",
+                "padding" = "6px 10px"
+              )
+            ),
+            icon = icons(
+              iconUrl = "redFlame.png",
+              iconWidth = 20,
+              iconHeight = 24,
+              iconAnchorX = 10,
+              iconAnchorY = 24
             )
-          ),
-          icon = icons(
-            iconUrl = "redFlame.png",
-            iconWidth = 20,
-            iconHeight = 24,
-            iconAnchorX = 10,
-            iconAnchorY = 24
           )
-        ) |>
+      }
+      
+      if (nrow(df_yesterday) > 0) {
+        m <- m |>
+          addCircleMarkers(
+            data = df_yesterday,
+            lng = ~offset_lon,
+            lat = ~offset_lat,
+            layerId = ~spot_id,
+            label = ~project_name,
+            radius = 7,
+            stroke = TRUE,
+            weight = 1,
+            color = "black",
+            fillColor = "black",
+            fillOpacity = 1
+          )
+      }
+      
+      m <- m |>
         addControl(
           html = paste0(
             "<div style='
@@ -459,7 +503,7 @@ server <- function(input, output, session) {
               font-weight:bold;
               font-size:16px;
             '>
-            Active Spot Forecasts: ", nrow(df), "
+            Active Spot Forecasts: ", nrow(df_map), "
             </div>"
           ),
           position = "topright"
@@ -550,6 +594,12 @@ server <- function(input, output, session) {
       )
     }
     
+    burns_tbl <- burns_tbl %>%
+      mutate(
+        issued_order = ifelse(issued == "Today", 0, 1)
+      ) %>%
+      arrange(forest, issued_order, desc(date_issued), project_name)
+    
     forest_groups <- split(burns_tbl, burns_tbl$forest)
     
     tagList(
@@ -582,6 +632,19 @@ server <- function(input, output, session) {
               font-size:16px;
             ",
             
+            tags$thead(
+              tags$tr(
+                tags$th(
+                  style = "text-align:left; padding:10px; border-bottom:2px solid #cccccc;",
+                  "Burn Unit"
+                ),
+                tags$th(
+                  style = "text-align:left; padding:10px; border-bottom:2px solid #cccccc;",
+                  "Date Issued"
+                )
+              )
+            ),
+            
             tags$tbody(
               lapply(seq_len(nrow(forest_df)), function(i) {
                 
@@ -609,8 +672,13 @@ server <- function(input, output, session) {
                   },
                   
                   tags$td(
-                    style = "padding:0;",
-                    
+                    style = paste0(
+                      "padding:12px 10px;",
+                      "color:", text_color, ";",
+                      "font-weight:", font_weight, ";",
+                      "background-color:", bg_color, ";",
+                      "border-left:5px solid ", border_color, ";"
+                    ),
                     tags$a(
                       href = "#",
                       onclick = paste0(
@@ -620,14 +688,25 @@ server <- function(input, output, session) {
                       ),
                       style = paste0(
                         "display:block;",
-                        "padding:12px 10px;",
                         "color:", text_color, ";",
                         "text-decoration:none;",
-                        "font-weight:", font_weight, ";",
-                        "background-color:", bg_color, ";",
-                        "border-left:5px solid ", border_color, ";"
+                        "font-weight:", font_weight, ";"
                       ),
                       forest_df$project_name[i]
+                    )
+                  ),
+                  
+                  tags$td(
+                    style = paste0(
+                      "padding:12px 10px;",
+                      "color:#1a1a1a;",
+                      "background-color:", bg_color, ";"
+                    ),
+                    paste0(
+                      forest_df$issued[i],
+                      " (",
+                      format(as.Date(forest_df$date_issued[i]), "%Y-%m-%d"),
+                      ")"
                     )
                   )
                 )
@@ -781,8 +860,18 @@ server <- function(input, output, session) {
     tagList(
       h3(style = "font-weight:bold; font-size:24px;", project),
       div(
-        style = "margin-bottom:10px; font-size:16px;",
+        style = "margin-bottom:6px; font-size:16px;",
         a("Full Spot Weather Forecast", href = spot_url, target = "_blank")
+      ),
+      div(
+        style = "margin-bottom:10px; font-size:16px; color:#555;",
+        paste0(
+          "Date Issued: ",
+          format(as.Date(forecast_df$date_issued[idx]), "%Y-%m-%d"),
+          " (",
+          forecast_df$issued[idx],
+          ")"
+        )
       ),
       sfog_box,
       HTML(as.character(kbl_table)),
