@@ -92,7 +92,8 @@ spot_df_fun <- function(SPOT_URL) {
     mutate(
       spot_id = str_extract(productText, "(?<=\\.TAG\\s)[0-9.]+"),
       usda = str_detect(productText, "usda\\.gov"),
-      issuanceTime = ymd_hms(issuanceTime)
+      issuanceTime = ymd_hms(issuanceTime, tz = "UTC"),
+      date_issued = as.Date(with_tz(issuanceTime, "America/New_York"))
     ) %>%
     filter(usda == TRUE)
 }
@@ -297,7 +298,6 @@ build_cache <- function() {
     filter(issuingOffice %in% wfo$WFO) %>%
     filter(productName == "Suppression Forecast") %>%
     rename(api_url = "@id") %>%
-    mutate(date_issued = as.Date(ymd_hms(issuanceTime))) %>%
     filter(date_issued %in% c(today_val, today_val - 1))
   
   stq_df <- bind_rows(stq_ls$`@graph`) %>%
@@ -359,7 +359,8 @@ build_cache <- function() {
     mutate(
       spot_id_clean = gsub("\\..*$", "", spot_id),
       nws_spot_url = paste0("https://spot.weather.gov/forecasts/", spot_id_clean),
-      issued = ifelse(date_issued == today_val, "Today", "Yesterday")) 
+      issued = ifelse(date_issued == today_val, "Today", "Yesterday")
+    )
   
   log_msg("Joined forecast rows:", nrow(forecast_df))
   
