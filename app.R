@@ -296,7 +296,7 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   
   remote_cache <- reactivePoll(
-    intervalMillis = 5 * 60 * 1000,
+    intervalMillis = 60 * 1000,
     session = NULL,
     checkFunc = function() {
       resp <- request(cache_url) |>
