@@ -17,7 +17,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Check out main branch
         uses: actions/checkout@v4
         with:
@@ -35,14 +34,12 @@ jobs:
       - name: Check run window
         id: timecheck
         run: |
-          # Allow manual runs anytime
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "Manual run detected — forcing cache build."
             echo "run_cache=true" >> $GITHUB_OUTPUT
             exit 0
           fi
 
-          # Scheduled runs only between 06:00–10:59 Eastern
           HOUR=$(TZ="America/New_York" date +%H)
           echo "Current Eastern hour: $HOUR"
 
@@ -75,7 +72,7 @@ jobs:
         if: steps.timecheck.outputs.run_cache == 'true'
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          cache-version: 2
+          cache-version: 1
           packages: |
             any::tidyverse
             any::lubridate
@@ -93,11 +90,25 @@ jobs:
         run: |
           Rscript update_cache.R
 
-      - name: Verify built cache timestamp
+      - name: Verify built cache file exists and show timestamp
         if: steps.timecheck.outputs.run_cache == 'true'
         working-directory: main-repo
         run: |
-          Rscript -e "x <- readRDS('cache/superfog_cache.rds'); cat('main-repo timestamp:', as.character(x\$last_refresh), '\n')"
+          echo "Working directory:"
+          pwd
+
+          echo "Contents of main-repo:"
+          ls -la
+
+          echo "Contents of cache directory:"
+          ls -la cache || true
+
+          if [ ! -f cache/superfog_cache.rds ]; then
+            echo "ERROR: cache/superfog_cache.rds was not created"
+            exit 1
+          fi
+
+          Rscript -e 'x <- readRDS("cache/superfog_cache.rds"); cat("main-repo timestamp:", as.character(x$last_refresh), "\n")'
 
       - name: Copy generated cache
         if: steps.timecheck.outputs.run_cache == 'true'
@@ -105,11 +116,25 @@ jobs:
           mkdir -p cache-repo/cache
           cp -f main-repo/cache/superfog_cache.rds cache-repo/cache/superfog_cache.rds
 
-      - name: Verify copied cache timestamp
+      - name: Verify copied cache file exists and show timestamp
         if: steps.timecheck.outputs.run_cache == 'true'
         working-directory: cache-repo
         run: |
-          Rscript -e "x <- readRDS('cache/superfog_cache.rds'); cat('cache-repo timestamp:', as.character(x\$last_refresh), '\n')"
+          echo "Working directory:"
+          pwd
+
+          echo "Contents of cache-repo:"
+          ls -la
+
+          echo "Contents of cache directory:"
+          ls -la cache || true
+
+          if [ ! -f cache/superfog_cache.rds ]; then
+            echo "ERROR: cache/superfog_cache.rds was not copied"
+            exit 1
+          fi
+
+          Rscript -e 'x <- readRDS("cache/superfog_cache.rds"); cat("cache-repo timestamp:", as.character(x$last_refresh), "\n")'
 
       - name: Show git status
         if: steps.timecheck.outputs.run_cache == 'true'
