@@ -295,7 +295,7 @@ build_cache <- function() {
     filter(productName == "Suppression Forecast") %>%
     rename(api_url = "@id") %>%
     mutate(date_issued = as.Date(ymd_hms(issuanceTime))) %>%
-    filter(date_issued == today_val)
+    filter(date_issued %in% c(today_val, today_val - 1))
   
   stq_df <- bind_rows(stq_ls$`@graph`) %>%
     mutate(issuingOffice = str_sub(issuingOffice, 2)) %>%
@@ -303,7 +303,7 @@ build_cache <- function() {
     filter(productName == "Spot Forecast Request") %>%
     rename(api_url = "@id") %>%
     mutate(date_issued = as.Date(ymd_hms(issuanceTime))) %>%
-    filter(date_issued %in% c(today_val, today_val - 1))
+    filter(date_issued %in% c(today_val, today_val - 1, , today_val - 2))
   
   log_msg("FWS products found:", nrow(fws_df))
   log_msg("STQ products found:", nrow(stq_df))
@@ -353,8 +353,8 @@ build_cache <- function() {
   forecast_df <- left_join(request_api_df, spot_api_df, by = "spot_id") %>%
     mutate(
       spot_id_clean = gsub("\\..*$", "", spot_id),
-      nws_spot_url = paste0("https://spot.weather.gov/forecasts/", spot_id_clean)
-    )
+      nws_spot_url = paste0("https://spot.weather.gov/forecasts/", spot_id_clean),
+      issued = ifelse(date_issued == today_val, "Today", "Yesterday")) 
   
   log_msg("Joined forecast rows:", nrow(forecast_df))
   
