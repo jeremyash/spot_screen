@@ -290,7 +290,10 @@ build_cache <- function() {
     resp_body_json()
   
   fws_df <- bind_rows(fws_ls$`@graph`) %>%
-    mutate(issuingOffice = str_sub(issuingOffice, 2)) %>%
+    mutate(
+      issuingOffice = str_sub(issuingOffice, 2),
+      date_issued = as.Date(with_tz(ymd_hms(issuanceTime, tz = "UTC"), "America/New_York"))
+    ) %>%
     filter(issuingOffice %in% wfo$WFO) %>%
     filter(productName == "Suppression Forecast") %>%
     rename(api_url = "@id") %>%
@@ -298,12 +301,14 @@ build_cache <- function() {
     filter(date_issued %in% c(today_val, today_val - 1))
   
   stq_df <- bind_rows(stq_ls$`@graph`) %>%
-    mutate(issuingOffice = str_sub(issuingOffice, 2)) %>%
+    mutate(
+      issuingOffice = str_sub(issuingOffice, 2),
+      date_issued = as.Date(with_tz(ymd_hms(issuanceTime, tz = "UTC"), "America/New_York"))
+    ) %>%
     filter(issuingOffice %in% wfo$WFO) %>%
     filter(productName == "Spot Forecast Request") %>%
     rename(api_url = "@id") %>%
-    mutate(date_issued = as.Date(ymd_hms(issuanceTime))) %>%
-    filter(date_issued %in% c(today_val, today_val - 1, , today_val - 2))
+    filter(date_issued %in% c(today_val, today_val - 1, today_val - 2))
   
   log_msg("FWS products found:", nrow(fws_df))
   log_msg("STQ products found:", nrow(stq_df))
