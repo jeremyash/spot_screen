@@ -488,12 +488,12 @@ server <- function(input, output, session) {
             group = "Yesterday",
             label = ~project_name,
             labelOptions = marker_label_opts,
-            radius = 7,
-            color = "black",
-            fillColor = "black",
+            radius = 9,
+            color = "#EFEFEF",   # very light gray ring
+            fillColor = "black", # black center
             fillOpacity = 1,
             stroke = TRUE,
-            weight = 1
+            weight = 6           # thick outline
           )
       }
       
@@ -504,22 +504,35 @@ server <- function(input, output, session) {
         "border-radius:6px;",
         "box-shadow:0 0 6px rgba(0,0,0,0.3);",
         "font-size:14px;",
-        "line-height:1.4;",
-        "min-width:190px;",
+        "line-height:1.2;",
+        "min-width:180px;",
+        "font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;",
         "'>",
-        "<div style='font-weight:bold; margin-bottom:8px;'>Date Issued</div>",
         
-        "<label style='display:grid; grid-template-columns:30px 1fr 20px; align-items:center; column-gap:10px; margin-bottom:8px; cursor:pointer;'>",
-        "<img src='", fire_icon_url, "' style='width:28px; height:28px; display:block;'>",
-        "<span>Today</span>",
+        "<div style='font-weight:600; font-size:16px; margin-bottom:6px;'>Date Issued</div>",
+        
+        "<label style='display:grid; grid-template-columns:30px 1fr 18px; align-items:center; column-gap:8px; margin-bottom:4px; cursor:pointer;'>",
+        
+        "<span style='display:flex; align-items:center; justify-content:center;'>",
+        "<img src='", fire_icon_url, "' style='width:26px; height:26px;'>",
+        "</span>",
+        
+        "<span style='font-size:15px;'>Today</span>",
         "<input type='radio' name='date_layer_choice' value='Today' checked>",
         "</label>",
         
-        "<label style='display:grid; grid-template-columns:30px 1fr 20px; align-items:center; column-gap:10px; margin-bottom:0; cursor:pointer;'>",
-        "<span style='display:inline-block; width:14px; height:14px; background:black; border-radius:50%; justify-self:center;'></span>",
-        "<span>Yesterday</span>",
+        "<label style='display:grid; grid-template-columns:30px 1fr 18px; align-items:center; column-gap:8px; margin-bottom:0; cursor:pointer;'>",
+        
+        "<span style='display:flex; align-items:center; justify-content:center;'>",
+        "<svg width='26' height='26' viewBox='0 0 32 32'>",
+        "<circle cx='16' cy='16' r='9' fill='black' stroke='#BFBFBF' stroke-width='6' />",
+        "</svg>",
+        "</span>",
+        
+        "<span style='font-size:15px;'>Yesterday</span>",
         "<input type='radio' name='date_layer_choice' value='Yesterday'>",
         "</label>",
+        
         "</div>"
       )
       
@@ -656,7 +669,8 @@ server <- function(input, output, session) {
           tags$table(
             style = "
               width:100%;
-              border-collapse:collapse;
+              border-collapse:separate;
+              border-spacing:0;
               margin-bottom:20px;
               font-size:16px;
             ",
@@ -676,16 +690,22 @@ server <- function(input, output, session) {
               lapply(seq_len(nrow(forest_df)), function(i) {
                 is_selected <- identical(selected_burn_id(), forest_df$spot_id[i])
                 
-                bg_color <- if (is_selected) "#e8f4ea" else "transparent"
+                row_bg <- if (is_selected) "#e8f4ea" else "transparent"
                 border_color <- if (is_selected) "#228B22" else "transparent"
                 text_color <- if (is_selected) "#000000" else "#1a1a1a"
                 font_weight <- if (is_selected) "700" else "600"
                 
                 tags$tr(
-                  style = "
-                    border-bottom:1px solid #e6e6e6;
-                    cursor:pointer;
-                  ",
+                  style = paste0(
+                    "border-bottom:1px solid #e6e6e6;",
+                    "cursor:pointer;",
+                    "transition:background-color 0.15s ease;"
+                  ),
+                  onclick = paste0(
+                    "Shiny.setInputValue('table_burn_click','",
+                    forest_df$spot_id[i],
+                    "', {priority: 'event'});"
+                  ),
                   onmouseover = if (!is_selected) {
                     "this.style.backgroundColor='#f5f5f5';"
                   } else {
@@ -701,30 +721,16 @@ server <- function(input, output, session) {
                       "padding:12px 10px;",
                       "color:", text_color, ";",
                       "font-weight:", font_weight, ";",
-                      "background-color:", bg_color, ";",
+                      "background-color:", row_bg, ";",
                       "border-left:5px solid ", border_color, ";"
                     ),
-                    tags$a(
-                      href = "#",
-                      onclick = paste0(
-                        "Shiny.setInputValue('table_burn_click','",
-                        forest_df$spot_id[i],
-                        "', {priority: 'event'}); return false;"
-                      ),
-                      style = paste0(
-                        "display:block;",
-                        "color:", text_color, ";",
-                        "text-decoration:none;",
-                        "font-weight:", font_weight, ";"
-                      ),
-                      forest_df$project_name[i]
-                    )
+                    forest_df$project_name[i]
                   ),
                   tags$td(
                     style = paste0(
                       "padding:12px 10px;",
                       "color:#1a1a1a;",
-                      "background-color:", bg_color, ";"
+                      "background-color:", row_bg, ";"
                     ),
                     forest_df$issued_display[i]
                   )
