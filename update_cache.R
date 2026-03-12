@@ -362,7 +362,7 @@ build_cache <- function() {
       issued = ifelse(date_issued == today_val, "Today", "Yesterday")
     ) %>% 
     group_by(nws_spot_url) %>% 
-    arrnage(desc(date_issued)) %>% 
+    arrange(desc(date_issued)) %>% 
     slice(1) %>% 
     ungroup()
   
