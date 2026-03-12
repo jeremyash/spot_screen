@@ -40,22 +40,40 @@ download_remote_cache <- function(url) {
   x
 }
 
-offset_duplicate_points <- function(df, jitter_amount = 0.03) {
+offset_duplicate_points <- function(df, jitter_amount = 0.12) {
   if (nrow(df) == 0) return(df)
   
   df %>%
+    mutate(
+      issued_rank = case_when(
+        issued == "Today" ~ 1L,
+        issued == "Yesterday" ~ 2L,
+        TRUE ~ 3L
+      )
+    ) %>%
     group_by(lat, lon) %>%
+    arrange(issued_rank, project_name, issuanceTime, .by_group = TRUE) %>%
     mutate(
       dup_n = n(),
-      dup_id = row_number()
+      dup_id = row_number(),
+      same_coord_today_yesterday = any(issued == "Today") & any(issued == "Yesterday")
     ) %>%
     ungroup() %>%
     mutate(
-      angle = ifelse(dup_n == 1, 0, 2 * pi * (dup_id - 1) / dup_n),
-      offset_lon = ifelse(dup_n == 1, lon, lon + jitter_amount * cos(angle)),
-      offset_lat = ifelse(dup_n == 1, lat, lat + jitter_amount * sin(angle))
+      offset_lon = case_when(
+        same_coord_today_yesterday & issued == "Today" ~ lon - jitter_amount,
+        same_coord_today_yesterday & issued == "Yesterday" ~ lon + jitter_amount,
+        dup_n == 1 ~ lon,
+        TRUE ~ lon + (jitter_amount * 0.75) * cos(2 * pi * (dup_id - 1) / dup_n)
+      ),
+      offset_lat = case_when(
+        same_coord_today_yesterday & issued == "Today" ~ lat + jitter_amount * 0.35,
+        same_coord_today_yesterday & issued == "Yesterday" ~ lat - jitter_amount * 0.35,
+        dup_n == 1 ~ lat,
+        TRUE ~ lat + (jitter_amount * 0.75) * sin(2 * pi * (dup_id - 1) / dup_n)
+      )
     ) %>%
-    select(-dup_n, -dup_id, -angle)
+    select(-issued_rank, -dup_n, -dup_id, -same_coord_today_yesterday)
 }
 
 format_issued_datetime <- function(x) {
@@ -80,9 +98,8 @@ format_issued_datetime <- function(x) {
 
 make_fire_icon_url <- function() {
   svg <- paste0(
-    "<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'>",
-    "<text x='14' y='18' text-anchor='middle' dominant-baseline='middle' ",
-    "font-size='20'>🔥</text>",
+    "<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'>",
+    "<text x='20' y='25' text-anchor='middle' dominant-baseline='middle' font-size='28'>🔥</text>",
     "</svg>"
   )
   paste0("data:image/svg+xml;utf8,", utils::URLencode(svg, reserved = TRUE))
@@ -144,14 +161,8 @@ ui <- fluidPage(
       Shiny.setInputValue('reset_map_click', Math.random());
     });
 
-    $(document).on('change', '.leaflet-layer-toggle', function () {
-      var group = $(this).data('group');
-      var checked = $(this).is(':checked');
-      Shiny.setInputValue('map_group_toggle', {
-        group: group,
-        checked: checked,
-        nonce: Math.random()
-      }, {priority: 'event'});
+    $(document).on('change', 'input[name=\"date_layer_choice\"]', function () {
+      Shiny.setInputValue('map_layer_choice', $(this).val(), {priority: 'event'});
     });
   ")),
   
@@ -413,10 +424,10 @@ server <- function(input, output, session) {
     
     fire_icon <- icons(
       iconUrl = fire_icon_url,
-      iconWidth = 28,
-      iconHeight = 28,
-      iconAnchorX = 14,
-      iconAnchorY = 14
+      iconWidth = 40,
+      iconHeight = 40,
+      iconAnchorX = 20,
+      iconAnchorY = 20
     )
     
     marker_label_opts <- labelOptions(
@@ -494,25 +505,20 @@ server <- function(input, output, session) {
         "box-shadow:0 0 6px rgba(0,0,0,0.3);",
         "font-size:14px;",
         "line-height:1.4;",
-        "min-width:170px;",
+        "min-width:190px;",
         "'>",
         "<div style='font-weight:bold; margin-bottom:8px;'>Date Issued</div>",
         
-        "<label style='display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; cursor:pointer;'>",
-        "<span style='display:flex; align-items:center;'>",
-        "<img src='", fire_icon_url, "' ",
-        "style='width:20px; height:20px; margin-right:8px; display:inline-block; vertical-align:middle;'>",
+        "<label style='display:grid; grid-template-columns:30px 1fr 20px; align-items:center; column-gap:10px; margin-bottom:8px; cursor:pointer;'>",
+        "<img src='", fire_icon_url, "' style='width:28px; height:28px; display:block;'>",
         "<span>Today</span>",
-        "</span>",
-        "<input type='checkbox' class='leaflet-layer-toggle' data-group='Today' checked>",
+        "<input type='radio' name='date_layer_choice' value='Today' checked>",
         "</label>",
         
-        "<label style='display:flex; align-items:center; justify-content:space-between; margin-bottom:0; cursor:pointer;'>",
-        "<span style='display:flex; align-items:center;'>",
-        "<span style='display:inline-block; width:12px; height:12px; background:black; border-radius:50%; margin-right:10px;'></span>",
+        "<label style='display:grid; grid-template-columns:30px 1fr 20px; align-items:center; column-gap:10px; margin-bottom:0; cursor:pointer;'>",
+        "<span style='display:inline-block; width:14px; height:14px; background:black; border-radius:50%; justify-self:center;'></span>",
         "<span>Yesterday</span>",
-        "</span>",
-        "<input type='checkbox' class='leaflet-layer-toggle' data-group='Yesterday'>",
+        "<input type='radio' name='date_layer_choice' value='Yesterday'>",
         "</label>",
         "</div>"
       )
@@ -564,21 +570,23 @@ server <- function(input, output, session) {
     handle_burn_click(input$forecast_map_shape_click)
   })
   
-  observeEvent(input$map_group_toggle, {
-    req(input$map_group_toggle$group)
-    req(!is.null(input$map_group_toggle$checked))
+  observeEvent(input$map_layer_choice, {
+    req(input$map_layer_choice)
     
-    if (isTRUE(input$map_group_toggle$checked)) {
+    if (input$map_layer_choice == "Today") {
       leafletProxy("forecast_map") |>
-        showGroup(input$map_group_toggle$group)
-    } else {
+        showGroup("Today") |>
+        hideGroup("Yesterday")
+    } else if (input$map_layer_choice == "Yesterday") {
       leafletProxy("forecast_map") |>
-        hideGroup(input$map_group_toggle$group)
+        hideGroup("Today") |>
+        showGroup("Yesterday")
     }
   })
   
   observe({
     leafletProxy("forecast_map") |>
+      showGroup("Today") |>
       hideGroup("Yesterday")
   })
   
