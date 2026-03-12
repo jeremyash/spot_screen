@@ -360,7 +360,11 @@ build_cache <- function() {
       spot_id_clean = gsub("\\..*$", "", spot_id),
       nws_spot_url = paste0("https://spot.weather.gov/forecasts/", spot_id_clean),
       issued = ifelse(date_issued == today_val, "Today", "Yesterday")
-    )
+    ) %>% 
+    group_by(nws_spot_url) %>% 
+    arrnage(desc(date_issued)) %>% 
+    slice(1) %>% 
+    ungroup()
   
   log_msg("Joined forecast rows:", nrow(forecast_df))
   
