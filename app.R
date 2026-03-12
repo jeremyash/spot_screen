@@ -452,12 +452,13 @@ server <- function(input, output, session) {
       ) |>
       addPolygons(
         data = r8_forests,
+        layerId = ~paste0("forest_", forest_id),
         fillColor = "#228B22",
         fillOpacity = 0.4,
         color = "#006400",
         weight = 1,
         smoothFactor = 0.5,
-        options = pathOptions(clickable = FALSE)
+        options = pathOptions(clickable = TRUE)
       )
     
     if (nrow(df_map) > 0 && all(c("lon", "lat") %in% names(df_map))) {
@@ -489,11 +490,11 @@ server <- function(input, output, session) {
             label = ~project_name,
             labelOptions = marker_label_opts,
             radius = 9,
-            color = "#EFEFEF",   # very light gray ring
-            fillColor = "black", # black center
+            color = "#D0D0D0",
+            fillColor = "black",
             fillOpacity = 1,
             stroke = TRUE,
-            weight = 6           # thick outline
+            weight = 6
           )
       }
       
@@ -508,31 +509,25 @@ server <- function(input, output, session) {
         "min-width:180px;",
         "font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;",
         "'>",
-        
         "<div style='font-weight:600; font-size:16px; margin-bottom:6px;'>Date Issued</div>",
         
         "<label style='display:grid; grid-template-columns:30px 1fr 18px; align-items:center; column-gap:8px; margin-bottom:4px; cursor:pointer;'>",
-        
         "<span style='display:flex; align-items:center; justify-content:center;'>",
         "<img src='", fire_icon_url, "' style='width:26px; height:26px;'>",
         "</span>",
-        
         "<span style='font-size:15px;'>Today</span>",
         "<input type='radio' name='date_layer_choice' value='Today' checked>",
         "</label>",
         
         "<label style='display:grid; grid-template-columns:30px 1fr 18px; align-items:center; column-gap:8px; margin-bottom:0; cursor:pointer;'>",
-        
         "<span style='display:flex; align-items:center; justify-content:center;'>",
         "<svg width='26' height='26' viewBox='0 0 32 32'>",
         "<circle cx='16' cy='16' r='9' fill='black' stroke='#BFBFBF' stroke-width='6' />",
         "</svg>",
         "</span>",
-        
         "<span style='font-size:15px;'>Yesterday</span>",
         "<input type='radio' name='date_layer_choice' value='Yesterday'>",
         "</label>",
-        
         "</div>"
       )
       
@@ -580,7 +575,42 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$forecast_map_shape_click, {
-    handle_burn_click(input$forecast_map_shape_click)
+    click <- input$forecast_map_shape_click
+    req(click$id)
+    
+    if (startsWith(click$id, "forest_")) {
+      forest_id_clicked <- sub("^forest_", "", click$id)
+      
+      forest_row <- r8_forests %>%
+        filter(forest_id == as.integer(forest_id_clicked))
+      
+      req(nrow(forest_row) == 1)
+      
+      bb <- st_bbox(forest_row)
+      leafletProxy("forecast_map") |>
+        clearPopups() |>
+        fitBounds(
+          lng1 = unname(bb["xmin"]),
+          lat1 = unname(bb["ymin"]),
+          lng2 = unname(bb["xmax"]),
+          lat2 = unname(bb["ymax"])
+        ) |>
+        addPopups(
+          lng = click$lng,
+          lat = click$lat,
+          popup = paste0(
+            "<div style='",
+            "font-size:18px;",
+            "font-weight:600;",
+            "color:#006400;",
+            "text-align:center;",
+            "font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;",
+            "'>",
+            forest_row$forest[1],
+            "</div>"
+          )
+        )
+    }
   })
   
   observeEvent(input$map_layer_choice, {
@@ -605,6 +635,7 @@ server <- function(input, output, session) {
   
   observeEvent(input$reset_map_click, {
     leafletProxy("forecast_map") |>
+      clearPopups() |>
       setView(
         lng = -88.11,
         lat = 34.95,
