@@ -58,6 +58,36 @@ offset_duplicate_points <- function(df, jitter_amount = 0.03) {
     select(-dup_n, -dup_id, -angle)
 }
 
+format_issued_datetime <- function(x) {
+  if (length(x) == 0 || all(is.na(x))) return(NA_character_)
+  
+  x_posix <- suppressWarnings(ymd_hms(x, tz = "UTC"))
+  
+  if (all(is.na(x_posix))) {
+    x_posix <- suppressWarnings(ymd_hm(x, tz = "UTC"))
+  }
+  
+  if (all(is.na(x_posix))) {
+    x_posix <- suppressWarnings(as.POSIXct(x, tz = "UTC"))
+  }
+  
+  if (all(is.na(x_posix))) {
+    return(as.character(x))
+  }
+  
+  format(with_tz(x_posix, "America/New_York"), "%Y-%m-%d %H:%M %Z")
+}
+
+make_fire_icon_url <- function() {
+  svg <- paste0(
+    "<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'>",
+    "<text x='14' y='18' text-anchor='middle' dominant-baseline='middle' ",
+    "font-size='20'>🔥</text>",
+    "</svg>"
+  )
+  paste0("data:image/svg+xml;utf8,", utils::URLencode(svg, reserved = TRUE))
+}
+
 # -------------------------------------------------
 # INITIAL CACHE LOAD
 # -------------------------------------------------
@@ -107,12 +137,21 @@ sfog_legend_box <- function(label, border, bg, text) {
 # -------------------------------------------------
 
 ui <- fluidPage(
-  
   titlePanel("USFS Region 8 Superfog Screener Pilot"),
   
   tags$script(HTML("
     $(document).on('click', '#reset_map', function () {
       Shiny.setInputValue('reset_map_click', Math.random());
+    });
+
+    $(document).on('change', '.leaflet-layer-toggle', function () {
+      var group = $(this).data('group');
+      var checked = $(this).is(':checked');
+      Shiny.setInputValue('map_group_toggle', {
+        group: group,
+        checked: checked,
+        nonce: Math.random()
+      }, {priority: 'event'});
     });
   ")),
   
@@ -121,14 +160,10 @@ ui <- fluidPage(
     
     tabPanel(
       "Map",
-      
       fluidRow(
-        
         column(
           8,
-          
           leafletOutput("forecast_map", height = "650px"),
-          
           div(
             style = "
               margin-top:10px;
@@ -139,14 +174,11 @@ ui <- fluidPage(
               font-size:14px;
               color:#666;
             ",
-            
             textOutput("last_refresh_text")
           )
         ),
-        
         column(
           4,
-          
           div(
             style = "
               height:650px;
@@ -155,7 +187,6 @@ ui <- fluidPage(
               padding-left:15px;
               padding-right:10px;
             ",
-            
             uiOutput("selected_info_map")
           )
         )
@@ -164,29 +195,23 @@ ui <- fluidPage(
     
     tabPanel(
       "Table",
-      
       fluidRow(
-        
         column(
           5,
-          
           div(
             style = "
               height:650px;
               overflow-y:auto;
               padding-right:10px;
             ",
-            
             div(
               style = "max-width:1200px; margin:auto; padding-top:15px;",
               uiOutput("burn_table_grouped")
             )
           )
         ),
-        
         column(
           7,
-          
           div(
             style = "
               height:650px;
@@ -195,7 +220,6 @@ ui <- fluidPage(
               padding-left:15px;
               padding-right:10px;
             ",
-            
             uiOutput("selected_info_table")
           )
         )
@@ -204,7 +228,6 @@ ui <- fluidPage(
     
     tabPanel(
       "About",
-      
       div(
         style = "max-width:950px; margin:auto; font-size:16px; line-height:1.7;",
         
@@ -226,10 +249,8 @@ ui <- fluidPage(
         
         div(
           style = "max-width:700px; margin:auto;",
-          
           tags$table(
             style = "width:100%; border-collapse:collapse; font-size:16px;",
-            
             tags$thead(
               tags$tr(
                 tags$th(style = "padding:10px; border-bottom:2px solid black;", "Variable"),
@@ -237,33 +258,27 @@ ui <- fluidPage(
                 tags$th(style = "padding:10px; border-bottom:2px solid black;", "Critical")
               )
             ),
-            
             tags$tbody(
-              
               tags$tr(
                 tags$td(style = "padding:8px;", "Temperature"),
                 tags$td(style = "background:#FFDA00; padding:8px; text-align:center; font-weight:bold;", "<70°F"),
                 tags$td(style = "background:#CA0020; color:white; padding:8px; text-align:center; font-weight:bold;", "<55°F")
               ),
-              
               tags$tr(
                 tags$td(style = "padding:8px;", "Relative Humidity"),
                 tags$td(style = "background:#FFDA00; padding:8px; text-align:center; font-weight:bold;", ">70%"),
                 tags$td(style = "background:#CA0020; color:white; padding:8px; text-align:center; font-weight:bold;", ">90%")
               ),
-              
               tags$tr(
                 tags$td(style = "padding:8px;", "Surface (20 ft) Wind Speed"),
                 tags$td(style = "background:#FFDA00; padding:8px; text-align:center; font-weight:bold;", "<7 mph"),
                 tags$td(style = "background:#CA0020; color:white; padding:8px; text-align:center; font-weight:bold;", "<4 mph")
               ),
-              
               tags$tr(
                 tags$td(style = "padding:8px;", "Cloud Cover"),
                 tags$td(style = "background:#FFDA00; padding:8px; text-align:center; font-weight:bold;", "<60%"),
                 tags$td(style = "background:#CA0020; color:white; padding:8px; text-align:center; font-weight:bold;", "<40%")
               )
-              
             )
           )
         ),
@@ -291,26 +306,22 @@ ui <- fluidPage(
             background:#ffffff;
             box-shadow:0 0 8px rgba(0,0,0,0.08);
           ",
-          
           h3(
             style = "margin-top:0; margin-bottom:15px;",
             "PB Piedmont Decision Guide"
           ),
-          
           sfog_legend_box(
             "PB Piedmont Required",
             "red",
             "#FFDADA",
             "All variables in Critical or Watch Out"
           ),
-          
           sfog_legend_box(
             "PB Piedmont Recommended",
             "orange",
             "#FFE8CC",
             "3 of 4 variables in Critical or Watch Out"
           ),
-          
           sfog_legend_box(
             "PB Piedmont Not Required",
             "#777777",
@@ -341,7 +352,6 @@ server <- function(input, output, session) {
   
   observe({
     invalidateLater(60 * 1000, session)
-    
     try({
       fresh_cache <- download_remote_cache(
         paste0(cache_url, "?t=", as.integer(Sys.time()))
@@ -355,10 +365,6 @@ server <- function(input, output, session) {
   observeEvent(input$main_tabs, {
     selected_burn_id(NULL)
   })
-  
-  # -------------------------------------------------
-  # PRECOMPUTE BURNS + FOREST JOIN ONCE PER CACHE REFRESH
-  # -------------------------------------------------
   
   burns_with_forest <- reactive({
     forecast_df <- cache_data()$forecast_df
@@ -383,13 +389,8 @@ server <- function(input, output, session) {
     
     joined |>
       st_drop_geometry() |>
-      mutate(forest = if_else(is.na(forest), "Not matched", forest)) |>
-      arrange(forest, project_name)
+      mutate(forest = if_else(is.na(forest), "Not matched", forest))
   })
-  
-  # -------------------------------------------------
-  # LAST REFRESH
-  # -------------------------------------------------
   
   output$last_refresh_text <- renderText({
     lr <- cache_data()$last_refresh
@@ -404,49 +405,51 @@ server <- function(input, output, session) {
     }
   })
   
-  # -------------------------------------------------
-  # MAP
-  # -------------------------------------------------
-  
   output$forecast_map <- renderLeaflet({
     df <- cache_data()$forecast_df
     df_map <- offset_duplicate_points(df)
     
+    fire_icon_url <- make_fire_icon_url()
+    
+    fire_icon <- icons(
+      iconUrl = fire_icon_url,
+      iconWidth = 28,
+      iconHeight = 28,
+      iconAnchorX = 14,
+      iconAnchorY = 14
+    )
+    
+    marker_label_opts <- labelOptions(
+      style = list(
+        "font-size" = "14px",
+        "font-weight" = "bold",
+        "padding" = "6px 10px"
+      ),
+      direction = "auto"
+    )
+    
     m <- leaflet() |>
       addTiles() |>
       setView(lng = -88.11, lat = 34.95, zoom = 5) |>
-      
       addPolygons(
         data = r8,
         fill = FALSE,
         color = "#000000",
         weight = 2,
-        opacity = 1
+        opacity = 1,
+        options = pathOptions(clickable = FALSE)
       ) |>
-      
       addPolygons(
         data = r8_forests,
         fillColor = "#228B22",
         fillOpacity = 0.4,
         color = "#006400",
         weight = 1,
-        layerId = ~forest_id,
-        highlightOptions = highlightOptions(
-          weight = 3,
-          color = "#FFFF00",
-          fillOpacity = 0.6,
-          bringToFront = TRUE
-        ),
-        popup = ~paste0(
-          "<div style='font-weight:bold;color:black;font-size:14px;padding:2px 6px;",
-          "background-color:rgba(255,255,255,0.8);'>",
-          forest,
-          "</div>"
-        )
+        smoothFactor = 0.5,
+        options = pathOptions(clickable = FALSE)
       )
     
     if (nrow(df_map) > 0 && all(c("lon", "lat") %in% names(df_map))) {
-      
       df_today <- df_map %>% filter(issued == "Today")
       df_yesterday <- df_map %>% filter(issued == "Yesterday")
       
@@ -457,21 +460,10 @@ server <- function(input, output, session) {
             lng = ~offset_lon,
             lat = ~offset_lat,
             layerId = ~spot_id,
+            group = "Today",
             label = ~project_name,
-            labelOptions = labelOptions(
-              style = list(
-                "font-size" = "14px",
-                "font-weight" = "bold",
-                "padding" = "6px 10px"
-              )
-            ),
-            icon = icons(
-              iconUrl = "redFlame.png",
-              iconWidth = 20,
-              iconHeight = 24,
-              iconAnchorX = 10,
-              iconAnchorY = 24
-            )
+            labelOptions = marker_label_opts,
+            icon = fire_icon
           )
       }
       
@@ -482,31 +474,53 @@ server <- function(input, output, session) {
             lng = ~offset_lon,
             lat = ~offset_lat,
             layerId = ~spot_id,
+            group = "Yesterday",
             label = ~project_name,
+            labelOptions = marker_label_opts,
             radius = 7,
-            stroke = TRUE,
-            weight = 1,
             color = "black",
             fillColor = "black",
-            fillOpacity = 1
+            fillOpacity = 1,
+            stroke = TRUE,
+            weight = 1
           )
       }
       
+      legend_toggle_html <- paste0(
+        "<div style='",
+        "background:white;",
+        "padding:8px 10px;",
+        "border-radius:6px;",
+        "box-shadow:0 0 6px rgba(0,0,0,0.3);",
+        "font-size:14px;",
+        "line-height:1.4;",
+        "min-width:170px;",
+        "'>",
+        "<div style='font-weight:bold; margin-bottom:8px;'>Date Issued</div>",
+        
+        "<label style='display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; cursor:pointer;'>",
+        "<span style='display:flex; align-items:center;'>",
+        "<img src='", fire_icon_url, "' ",
+        "style='width:20px; height:20px; margin-right:8px; display:inline-block; vertical-align:middle;'>",
+        "<span>Today</span>",
+        "</span>",
+        "<input type='checkbox' class='leaflet-layer-toggle' data-group='Today' checked>",
+        "</label>",
+        
+        "<label style='display:flex; align-items:center; justify-content:space-between; margin-bottom:0; cursor:pointer;'>",
+        "<span style='display:flex; align-items:center;'>",
+        "<span style='display:inline-block; width:12px; height:12px; background:black; border-radius:50%; margin-right:10px;'></span>",
+        "<span>Yesterday</span>",
+        "</span>",
+        "<input type='checkbox' class='leaflet-layer-toggle' data-group='Yesterday'>",
+        "</label>",
+        "</div>"
+      )
+      
       m <- m |>
         addControl(
-          html = paste0(
-            "<div style='
-              background:white;
-              padding:8px 12px;
-              border-radius:6px;
-              box-shadow:0 0 6px rgba(0,0,0,0.3);
-              font-weight:bold;
-              font-size:16px;
-            '>
-            Active Spot Forecasts: ", nrow(df_map), "
-            </div>"
-          ),
-          position = "topright"
+          html = legend_toggle_html,
+          position = "bottomright"
         )
     }
     
@@ -525,12 +539,12 @@ server <- function(input, output, session) {
             Reset Map View
           </button>
         ",
-        position = "topleft"
+        position = "topright"
       )
   })
   
-  observeEvent(input$forecast_map_marker_click, {
-    click <- input$forecast_map_marker_click
+  handle_burn_click <- function(click) {
+    req(click$id)
     
     selected_burn_id(click$id)
     
@@ -540,6 +554,32 @@ server <- function(input, output, session) {
         lat = click$lat,
         zoom = 8
       )
+  }
+  
+  observeEvent(input$forecast_map_marker_click, {
+    handle_burn_click(input$forecast_map_marker_click)
+  })
+  
+  observeEvent(input$forecast_map_shape_click, {
+    handle_burn_click(input$forecast_map_shape_click)
+  })
+  
+  observeEvent(input$map_group_toggle, {
+    req(input$map_group_toggle$group)
+    req(!is.null(input$map_group_toggle$checked))
+    
+    if (isTRUE(input$map_group_toggle$checked)) {
+      leafletProxy("forecast_map") |>
+        showGroup(input$map_group_toggle$group)
+    } else {
+      leafletProxy("forecast_map") |>
+        hideGroup(input$map_group_toggle$group)
+    }
+  })
+  
+  observe({
+    leafletProxy("forecast_map") |>
+      hideGroup("Yesterday")
   })
   
   observeEvent(input$reset_map_click, {
@@ -550,26 +590,6 @@ server <- function(input, output, session) {
         zoom = 5
       )
   })
-  
-  observeEvent(input$forecast_map_shape_click, {
-    click <- input$forecast_map_shape_click
-    req(click$id)
-    
-    forest_clicked <- r8_forests[r8_forests$forest_id == click$id, ]
-    bounds <- st_bbox(forest_clicked)
-    
-    leafletProxy("forecast_map") |>
-      fitBounds(
-        lng1 = as.numeric(bounds["xmin"]),
-        lat1 = as.numeric(bounds["ymin"]),
-        lng2 = as.numeric(bounds["xmax"]),
-        lat2 = as.numeric(bounds["ymax"])
-      )
-  })
-  
-  # -------------------------------------------------
-  # TABLE
-  # -------------------------------------------------
   
   observeEvent(input$table_burn_click, {
     selected_burn_id(input$table_burn_click)
@@ -596,9 +616,10 @@ server <- function(input, output, session) {
     
     burns_tbl <- burns_tbl %>%
       mutate(
-        issued_order = ifelse(issued == "Today", 0, 1)
+        issued_order = ifelse(issued == "Today", 0, 1),
+        issued_display = format_issued_datetime(issuanceTime)
       ) %>%
-      arrange(forest, issued_order, desc(date_issued), project_name)
+      arrange(forest, issued_order, desc(issuanceTime), project_name)
     
     forest_groups <- split(burns_tbl, burns_tbl$forest)
     
@@ -631,7 +652,6 @@ server <- function(input, output, session) {
               margin-bottom:20px;
               font-size:16px;
             ",
-            
             tags$thead(
               tags$tr(
                 tags$th(
@@ -644,10 +664,8 @@ server <- function(input, output, session) {
                 )
               )
             ),
-            
             tags$tbody(
               lapply(seq_len(nrow(forest_df)), function(i) {
-                
                 is_selected <- identical(selected_burn_id(), forest_df$spot_id[i])
                 
                 bg_color <- if (is_selected) "#e8f4ea" else "transparent"
@@ -670,7 +688,6 @@ server <- function(input, output, session) {
                   } else {
                     ""
                   },
-                  
                   tags$td(
                     style = paste0(
                       "padding:12px 10px;",
@@ -695,19 +712,13 @@ server <- function(input, output, session) {
                       forest_df$project_name[i]
                     )
                   ),
-                  
                   tags$td(
                     style = paste0(
                       "padding:12px 10px;",
                       "color:#1a1a1a;",
                       "background-color:", bg_color, ";"
                     ),
-                    paste0(
-                      forest_df$issued[i],
-                      " (",
-                      format(as.Date(forest_df$date_issued[i]), "%Y-%m-%d"),
-                      ")"
-                    )
+                    forest_df$issued_display[i]
                   )
                 )
               })
@@ -718,12 +729,7 @@ server <- function(input, output, session) {
     )
   })
   
-  # -------------------------------------------------
-  # INFO PANEL HELPERS
-  # -------------------------------------------------
-  
   build_selected_info <- function(prompt_text) {
-    
     clicked_id <- selected_burn_id()
     
     if (is.null(clicked_id)) {
@@ -752,6 +758,7 @@ server <- function(input, output, session) {
     spot_url <- forecast_df$nws_spot_url[idx]
     project <- forecast_df$project_name[idx]
     sfog_df <- sfog_tables[[idx]]
+    issued_display <- format_issued_datetime(forecast_df$issuanceTime[idx])
     
     if (is.null(sfog_df)) {
       return(
@@ -778,40 +785,32 @@ server <- function(input, output, session) {
     if (total_max == 4) {
       sfog_box <- div(
         style = "border:4px solid red; background-color:#FFDADA; color:black; padding:12px; font-size:15px; margin:10px;",
-        
         div(
           style = "font-weight:bold; font-size:18px; margin-bottom:6px;",
           "PB Piedmont Required"
         ),
-        
         HTML(
           'Superfog criteria have been met. Please run a <a href="https://piedmont.dri.edu/" target="_blank">PB Piedmont model</a>.'
         )
       )
-      
     } else if (total_max == 3) {
       sfog_box <- div(
         style = "border:4px solid orange; background-color:#FFE8CC; color:black; padding:12px; font-size:15px; margin:10px;",
-        
         div(
           style = "font-weight:bold; font-size:18px; margin-bottom:6px;",
           "PB Piedmont Recommended"
         ),
-        
         HTML(
           'Most superfog criteria have been met. Running a <a href="https://piedmont.dri.edu/" target="_blank">PB Piedmont model</a> is recommended.'
         )
       )
-      
     } else {
       sfog_box <- div(
         style = "border:4px solid green; background-color:#DAF5DA; color:black; padding:12px; font-size:15px; margin:10px;",
-        
         div(
           style = "font-weight:bold; font-size:18px; margin-bottom:6px;",
           "PB Piedmont Not Required"
         ),
-        
         "Superfog criteria have not been met."
       )
     }
@@ -865,13 +864,7 @@ server <- function(input, output, session) {
       ),
       div(
         style = "margin-bottom:10px; font-size:16px; color:#555;",
-        paste0(
-          "Date Issued: ",
-          format(as.Date(forecast_df$date_issued[idx]), "%Y-%m-%d"),
-          " (",
-          forecast_df$issued[idx],
-          ")"
-        )
+        paste0("Date Issued: ", issued_display)
       ),
       sfog_box,
       HTML(as.character(kbl_table)),
