@@ -157,12 +157,6 @@ sfog_legend_box <- function(label, border, bg, text) {
 ui <- fluidPage(
   titlePanel("USFS Region 8 Superfog Screener Pilot"),
   
-  tags$style(HTML("
-    .leaflet-marker-icon {
-      image-rendering: -webkit-optimize-contrast;
-      image-rendering: crisp-edges;
-    }
-  ")),
   
   tags$script(HTML("
     $(document).on('click', '#reset_map', function () {
