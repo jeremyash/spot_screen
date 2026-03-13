@@ -149,7 +149,6 @@ convert_to_24hr <- function(time_str) {
 # SUPERFOG PARSING
 # -------------------------------
 
-
 parse_spot_forecasts <- function(df) {
   if (nrow(df) == 0) return(list())
   
@@ -339,6 +338,13 @@ parse_spot_forecasts <- function(df) {
       if (nrow(t_all_times_df) == 0) return(NULL)
       
       base_date <- as.Date(spot_info$date, format = "%m/%d/%y")
+      if (is.na(base_date) && !is.null(spot_info$date_issued) && !is.na(spot_info$date_issued)) {
+        base_date <- as.Date(spot_info$date_issued)
+      }
+      if (is.na(base_date)) {
+        log_msg("parse_spot_forecasts row", i, ": base_date is NA")
+        return(NULL)
+      }
       
       forecast_dates <- rep(base_date, nrow(t_all_times_df))
       if (nrow(t_all_times_df) > 1) {
@@ -544,6 +550,17 @@ build_cache <- function() {
   # -------------------------------------------------
   
   sfog_tables <- parse_spot_forecasts(forecast_df)
+  
+  parsed_ok <- purrr::map_lgl(sfog_tables, ~ !is.null(.x) && nrow(.x) > 0)
+  log_msg("Parsed sfog tables retained:", sum(parsed_ok), "of", length(sfog_tables))
+  
+  forecast_df <- forecast_df[parsed_ok, , drop = FALSE]
+  sfog_tables <- sfog_tables[parsed_ok]
+  
+  if (nrow(forecast_df) == 0 || length(sfog_tables) == 0) {
+    log_msg("No parsed spot forecast tables retained. Writing empty cache.")
+    return(empty_cache())
+  }
   
   # -------------------------------------------------
   # COMBINE OUTPUTS
