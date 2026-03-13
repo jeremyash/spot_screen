@@ -96,17 +96,14 @@ format_issued_datetime <- function(x) {
   format(with_tz(x_posix, "America/New_York"), "%Y-%m-%d %H:%M %Z")
 }
 
-# make_fire_icon_url <- function() {
-#   svg <- paste0(
-#     "<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'>",
-#     "<text x='20' y='25' text-anchor='middle' dominant-baseline='middle' font-size='28'>🔥</text>",
-#     "</svg>"
-#   )
-#   paste0("data:image/svg+xml;utf8,", utils::URLencode(svg, reserved = TRUE))
-# }
-
-make_fire_icon_url <- function() {
-  "https://cdn-icons-png.flaticon.com/512/8795/8795255.png"
+make_fire_icon_path <- function(type = c("today", "yesterday")) {
+  type <- match.arg(type)
+  
+  if (type == "today") {
+    "red-fire-flame.png"
+  } else {
+    "black-fire-flame.png"
+  }
 }
 
 # -------------------------------------------------
@@ -159,6 +156,13 @@ sfog_legend_box <- function(label, border, bg, text) {
 
 ui <- fluidPage(
   titlePanel("USFS Region 8 Superfog Screener Pilot"),
+  
+  tags$style(HTML("
+    .leaflet-marker-icon {
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+    }
+  ")),
   
   tags$script(HTML("
     $(document).on('click', '#reset_map', function () {
@@ -432,10 +436,19 @@ server <- function(input, output, session) {
     df <- cache_data()$forecast_df
     df_map <- offset_duplicate_points(df)
     
-    fire_icon_url <- make_fire_icon_url()
+    fire_icon_url_today <- make_fire_icon_path("today")
+    fire_icon_url_yesterday <- make_fire_icon_path("yesterday")
     
-    fire_icon <- icons(
-      iconUrl = fire_icon_url,
+    fire_icon_today <- icons(
+      iconUrl = fire_icon_url_today,
+      iconWidth = 24,
+      iconHeight = 24,
+      iconAnchorX = 12,
+      iconAnchorY = 12
+    )
+    
+    fire_icon_yesterday <- icons(
+      iconUrl = fire_icon_url_yesterday,
       iconWidth = 24,
       iconHeight = 24,
       iconAnchorX = 12,
@@ -487,13 +500,13 @@ server <- function(input, output, session) {
             group = "Today",
             label = ~project_name,
             labelOptions = marker_label_opts,
-            icon = fire_icon
+            icon = fire_icon_today
           )
       }
       
       if (nrow(df_yesterday) > 0) {
         m <- m |>
-          addCircleMarkers(
+          addMarkers(
             data = df_yesterday,
             lng = ~offset_lon,
             lat = ~offset_lat,
@@ -501,12 +514,7 @@ server <- function(input, output, session) {
             group = "Yesterday",
             label = ~project_name,
             labelOptions = marker_label_opts,
-            radius = 9,
-            color = "#D0D0D0",
-            fillColor = "black",
-            fillOpacity = 1,
-            stroke = TRUE,
-            weight = 6
+            icon = fire_icon_yesterday
           )
       }
       
@@ -525,7 +533,7 @@ server <- function(input, output, session) {
         
         "<label style='display:grid; grid-template-columns:30px 1fr 18px; align-items:center; column-gap:8px; margin-bottom:4px; cursor:pointer;'>",
         "<span style='display:flex; align-items:center; justify-content:center;'>",
-        "<img src='", fire_icon_url, "' style='width:26px; height:26px;'>",
+        "<img src='", fire_icon_url_today, "' style='width:24px; height:24px;'>",
         "</span>",
         "<span style='font-size:15px;'>Today</span>",
         "<input type='radio' name='date_layer_choice' value='Today' checked>",
@@ -533,9 +541,7 @@ server <- function(input, output, session) {
         
         "<label style='display:grid; grid-template-columns:30px 1fr 18px; align-items:center; column-gap:8px; margin-bottom:0; cursor:pointer;'>",
         "<span style='display:flex; align-items:center; justify-content:center;'>",
-        "<svg width='26' height='26' viewBox='0 0 32 32'>",
-        "<circle cx='16' cy='16' r='9' fill='black' stroke='#BFBFBF' stroke-width='6' />",
-        "</svg>",
+        "<img src='", fire_icon_url_yesterday, "' style='width:24px; height:24px;'>",
         "</span>",
         "<span style='font-size:15px;'>Yesterday</span>",
         "<input type='radio' name='date_layer_choice' value='Yesterday'>",
@@ -716,7 +722,12 @@ server <- function(input, output, session) {
               border-spacing:0;
               margin-bottom:20px;
               font-size:16px;
+              table-layout:fixed;
             ",
+            tags$colgroup(
+              tags$col(style = "width:auto;"),
+              tags$col(style = "width:210px;")
+            ),
             tags$thead(
               tags$tr(
                 tags$th(
@@ -724,7 +735,7 @@ server <- function(input, output, session) {
                   "Burn Unit"
                 ),
                 tags$th(
-                  style = "text-align:left; padding:10px; border-bottom:2px solid #cccccc;",
+                  style = "text-align:left; padding:10px; border-bottom:2px solid #cccccc; width:210px; white-space:nowrap;",
                   "Date Issued"
                 )
               )
@@ -773,7 +784,9 @@ server <- function(input, output, session) {
                     style = paste0(
                       "padding:12px 10px;",
                       "color:#1a1a1a;",
-                      "background-color:", row_bg, ";"
+                      "background-color:", row_bg, ";",
+                      "width:210px;",
+                      "white-space:nowrap;"
                     ),
                     forest_df$issued_display[i]
                   )
