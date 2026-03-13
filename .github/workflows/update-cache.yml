@@ -31,32 +31,10 @@ jobs:
           path: cache-repo
           fetch-depth: 0
 
-      - name: Check run window
-        id: timecheck
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual run detected — forcing cache build."
-            echo "run_cache=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          HOUR=$(TZ="America/New_York" date +%H)
-          echo "Current Eastern hour: $HOUR"
-
-          if [ "$HOUR" -lt 6 ] || [ "$HOUR" -gt 10 ]; then
-            echo "Outside forecast window — skipping cache build."
-            echo "run_cache=false" >> $GITHUB_OUTPUT
-          else
-            echo "Inside forecast window."
-            echo "run_cache=true" >> $GITHUB_OUTPUT
-          fi
-
       - name: Set up R
-        if: steps.timecheck.outputs.run_cache == 'true'
         uses: r-lib/actions/setup-r@v2
 
       - name: Install system libraries
-        if: steps.timecheck.outputs.run_cache == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -69,7 +47,6 @@ jobs:
             libxml2-dev
 
       - name: Install R dependencies (cached)
-        if: steps.timecheck.outputs.run_cache == 'true'
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
           cache-version: 1
@@ -83,7 +60,6 @@ jobs:
             any::sf
 
       - name: Run cache builder
-        if: steps.timecheck.outputs.run_cache == 'true'
         working-directory: main-repo
         env:
           FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
@@ -91,7 +67,6 @@ jobs:
           Rscript update_cache.R
 
       - name: Verify built cache file exists and show timestamp
-        if: steps.timecheck.outputs.run_cache == 'true'
         working-directory: main-repo
         run: |
           echo "Working directory:"
@@ -111,13 +86,11 @@ jobs:
           Rscript -e 'x <- readRDS("cache/superfog_cache.rds"); cat("main-repo timestamp:", as.character(x$last_refresh), "\n")'
 
       - name: Copy generated cache
-        if: steps.timecheck.outputs.run_cache == 'true'
         run: |
           mkdir -p cache-repo/cache
           cp -f main-repo/cache/superfog_cache.rds cache-repo/cache/superfog_cache.rds
 
       - name: Verify copied cache file exists and show timestamp
-        if: steps.timecheck.outputs.run_cache == 'true'
         working-directory: cache-repo
         run: |
           echo "Working directory:"
@@ -137,14 +110,12 @@ jobs:
           Rscript -e 'x <- readRDS("cache/superfog_cache.rds"); cat("cache-repo timestamp:", as.character(x$last_refresh), "\n")'
 
       - name: Show git status
-        if: steps.timecheck.outputs.run_cache == 'true'
         working-directory: cache-repo
         run: |
           git status
           git diff -- cache/superfog_cache.rds || true
 
       - name: Commit updated cache
-        if: steps.timecheck.outputs.run_cache == 'true'
         working-directory: cache-repo
         run: |
           git config user.name "github-actions[bot]"
