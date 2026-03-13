@@ -343,6 +343,14 @@ ui <- fluidPage(
         
         br(),
         
+        h3("Update Cycle"),
+        
+        p(
+          HTML('The data is set to refresh every 30 minutes between 0600 and 1000 Eastern every morning. It may take up to 30 minutes from the time your forecast is generated to display on this site. If your forecast is still not diisplaying on the map, visit the <a href="https://spot.weather.gov/" target="_blank">NWS Spot Forecast</a> page and conduct a manual screening using the thresholds outlined above.')
+        ),
+        
+        br(),
+        
         h3("Additional Resources"),
         
         p(
