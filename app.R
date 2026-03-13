@@ -96,13 +96,17 @@ format_issued_datetime <- function(x) {
   format(with_tz(x_posix, "America/New_York"), "%Y-%m-%d %H:%M %Z")
 }
 
+# make_fire_icon_url <- function() {
+#   svg <- paste0(
+#     "<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'>",
+#     "<text x='20' y='25' text-anchor='middle' dominant-baseline='middle' font-size='28'>🔥</text>",
+#     "</svg>"
+#   )
+#   paste0("data:image/svg+xml;utf8,", utils::URLencode(svg, reserved = TRUE))
+# }
+
 make_fire_icon_url <- function() {
-  svg <- paste0(
-    "<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'>",
-    "<text x='20' y='25' text-anchor='middle' dominant-baseline='middle' font-size='28'>🔥</text>",
-    "</svg>"
-  )
-  paste0("data:image/svg+xml;utf8,", utils::URLencode(svg, reserved = TRUE))
+  "https://cdn-icons-png.flaticon.com/512/8795/8795255.png"
 }
 
 # -------------------------------------------------
@@ -432,10 +436,10 @@ server <- function(input, output, session) {
     
     fire_icon <- icons(
       iconUrl = fire_icon_url,
-      iconWidth = 40,
-      iconHeight = 40,
-      iconAnchorX = 20,
-      iconAnchorY = 20
+      iconWidth = 24,
+      iconHeight = 24,
+      iconAnchorX = 12,
+      iconAnchorY = 12
     )
     
     marker_label_opts <- labelOptions(
