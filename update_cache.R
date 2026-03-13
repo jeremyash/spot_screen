@@ -120,14 +120,24 @@ stq_df_fun <- function(STQ_URL) {
 # -------------------------------
 
 convert_to_24hr <- function(time_str) {
-  x <- toupper(trimws(time_str))
-  x <- gsub("MID", "12AM", x, ignore.case = TRUE)
-  x <- gsub("NOON", "12PM", x, ignore.case = TRUE)
-  x <- gsub("([0-9])A$", "\\1AM", x)
-  x <- gsub("([0-9])P$", "\\1PM", x)
+  if (length(time_str) != 1 || is.na(time_str)) return(NA_character_)
   
-  hour <- as.integer(sub("([0-9]+)(AM|PM)", "\\1", x))
-  period <- sub("([0-9]+)(AM|PM)", "\\2", x)
+  x <- toupper(trimws(as.character(time_str)))
+  if (!nzchar(x)) return(NA_character_)
+  
+  x <- gsub("^MID(NGT|NIGHT)?$", "12AM", x)
+  x <- gsub("^NOON$", "12PM", x)
+  x <- gsub("^([0-9]{1,2})\\s*A(M)?$", "\\1AM", x)
+  x <- gsub("^([0-9]{1,2})\\s*P(M)?$", "\\1PM", x)
+  x <- gsub("^([0-9]{1,2})A$", "\\1AM", x)
+  x <- gsub("^([0-9]{1,2})P$", "\\1PM", x)
+  
+  if (!grepl("^[0-9]{1,2}(AM|PM)$", x)) return(NA_character_)
+  
+  hour <- as.integer(sub("^([0-9]{1,2})(AM|PM)$", "\\1", x))
+  period <- sub("^([0-9]{1,2})(AM|PM)$", "\\2", x)
+  
+  if (is.na(hour) || hour < 1 || hour > 12) return(NA_character_)
   
   if (period == "AM") {
     if (hour == 12) "00" else sprintf("%02d", hour)
@@ -135,91 +145,198 @@ convert_to_24hr <- function(time_str) {
     if (hour == 12) sprintf("%02d", hour) else sprintf("%02d", hour + 12)
   }
 }
-
 # -------------------------------
 # SUPERFOG PARSING
 # -------------------------------
+
 
 parse_spot_forecasts <- function(df) {
   if (nrow(df) == 0) return(list())
   
   map(seq_len(nrow(df)), function(i) {
     tryCatch({
-      spot_txt <- df$productText[i]
+      spot_txt  <- df$productText[i]
       spot_info <- df[i, ]
       
       spot_chunks <- strsplit(spot_txt, "\n\n")[[1]]
-      time_chunks <- spot_chunks[grepl("^(TIME|[^\\n]*TIME)", spot_chunks)]
+      time_chunks <- spot_chunks[grepl("(^TIME\\s|\\nTIME\\s)", spot_chunks)]
       
-      if (length(time_chunks) == 0) {
-        return(NULL)
-      }
+      if (length(time_chunks) == 0) return(NULL)
       
-      time_dataframes <- lapply(seq_along(time_chunks), function(chunk_no) {
-        chunk <- time_chunks[[chunk_no]]
+      parse_time_chunk <- function(chunk) {
         lines <- strsplit(chunk, "\n")[[1]]
+        lines <- lines[nzchar(trimws(lines))]
+        lines_trim <- trimws(lines)
         
-        time_line <- lines[grepl("^TIME", lines)]
-        time_line <- gsub("\\(.*?\\)", "  ", time_line)
-        time_line <- gsub("(\\d)\\s+(AM|PM)", "\\1\\2", time_line)
-        time_line <- strsplit(trimws(time_line), "\\s{1,}")[[1]]
-        time_line <- gsub("MID", "12AM", time_line, ignore.case = TRUE)
-        time_line <- gsub("NOON", "12PM", time_line, ignore.case = TRUE)
-        time_line <- gsub("([0-9])A$", "\\1AM", time_line)
-        time_line <- gsub("([0-9])P$", "\\1PM", time_line)
-        time_line <- sub("^.*?(\\d{1,2}(AM|PM)).*$", "\\1", time_line, ignore.case = TRUE)
-        time_line <- list(time_line)
+        time_line <- lines_trim[grepl("^TIME", lines_trim)]
+        if (length(time_line) == 0) return(NULL)
+        time_line <- time_line[1]
         
-        data_lines <- lines[!grepl("^TIME", trimws(lines))]
-        data_lines <- data_lines[
-          grepl("^(RH|Temp|Sky\\s*\\(\\s*%\\s*\\))", data_lines, ignore.case = TRUE) |
-            grepl("^Surface\\s*(wnd|wind)\\s*spd", data_lines, ignore.case = TRUE) |
-            (grepl("^20\\s*ft\\s*wind(\\s*mph)?", data_lines, ignore.case = TRUE) &
-               !grepl("^20\\s*ft\\s*wind\\s*(dir|gust)", data_lines, ignore.case = TRUE))
+        time_line_norm <- toupper(time_line)
+        time_line_norm <- gsub("\\(.*?\\)", " ", time_line_norm)
+        time_line_norm <- gsub("MIDNGT", "12AM", time_line_norm, ignore.case = TRUE)
+        time_line_norm <- gsub("\\bMID\\b", "12AM", time_line_norm, ignore.case = TRUE)
+        time_line_norm <- gsub("\\bNOON\\b", "12PM", time_line_norm, ignore.case = TRUE)
+        time_line_norm <- gsub("([0-9]{1,2})\\s+(AM|PM)\\b", "\\1\\2", time_line_norm, ignore.case = TRUE)
+        time_line_norm <- gsub("\\b([0-9]{1,2})A\\b", "\\1AM", time_line_norm, ignore.case = TRUE)
+        time_line_norm <- gsub("\\b([0-9]{1,2})P\\b", "\\1PM", time_line_norm, ignore.case = TRUE)
+        
+        time_vals <- stringr::str_extract_all(
+          time_line_norm,
+          "\\b\\d{1,2}(AM|PM)\\b"
+        )[[1]]
+        
+        if (length(time_vals) == 0) return(NULL)
+        
+        out <- tibble(TIME = time_vals)
+        
+        strip_label <- function(x, type) {
+          switch(
+            type,
+            SKY = {
+              x <- sub("^Sky\\s*\\(\\s*%\\s*\\)\\.*\\s*", "", x, ignore.case = TRUE)
+              x <- sub("^Sky cover\\.*\\s*", "", x, ignore.case = TRUE)
+              x
+            },
+            TEMP = sub("^Temp\\.*\\s*", "", x, ignore.case = TRUE),
+            RH   = sub("^RH\\.*\\s*", "", x, ignore.case = TRUE),
+            WIND = {
+              x <- sub("^Surface\\s*(wnd|wind)\\s*spd\\.*\\s*", "", x, ignore.case = TRUE)
+              x <- sub("^20\\s*ft\\s*wind\\s*spd\\.*\\s*", "", x, ignore.case = TRUE)
+              x <- sub("^20\\s*ft\\s*wind\\s*mph\\.*\\s*", "", x, ignore.case = TRUE)
+              x <- sub("^20\\s*ft\\s*wind\\.*\\s*", "", x, ignore.case = TRUE)
+              x
+            },
+            x
+          )
+        }
+        
+        split_cells <- function(x, n_expected = NULL, allow_single_space_fallback = FALSE) {
+          x <- gsub("\\s+$", "", x)
+          x <- trimws(x)
+          
+          if (!nzchar(x)) return(character(0))
+          
+          vals <- unlist(strsplit(x, "\\s{2,}"))
+          vals <- trimws(vals)
+          vals <- vals[nzchar(vals)]
+          
+          if (allow_single_space_fallback &&
+              !is.null(n_expected) &&
+              length(vals) != n_expected) {
+            vals2 <- unlist(strsplit(x, "\\s+"))
+            vals2 <- trimws(vals2)
+            vals2 <- vals2[nzchar(vals2)]
+            
+            if (length(vals2) == n_expected) {
+              vals <- vals2
+            }
+          }
+          
+          vals
+        }
+        
+        split_sky_cells <- function(x, n_expected) {
+          x <- trimws(x)
+          if (!nzchar(x)) return(rep(NA_character_, n_expected))
+          
+          if (grepl("[A-Za-z]", x)) {
+            vals <- unlist(strsplit(x, "\\s+"))
+            vals <- trimws(vals)
+            vals <- vals[nzchar(vals)]
+          } else {
+            vals <- unlist(strsplit(x, "\\s{2,}"))
+            vals <- trimws(vals)
+            vals <- vals[nzchar(vals)]
+            
+            if (length(vals) != n_expected) {
+              vals2 <- unlist(strsplit(x, "\\s+"))
+              vals2 <- trimws(vals2)
+              vals2 <- vals2[nzchar(vals2)]
+              if (length(vals2) == n_expected) vals <- vals2
+            }
+          }
+          
+          if (length(vals) < n_expected) vals <- c(vals, rep(NA_character_, n_expected - length(vals)))
+          if (length(vals) > n_expected) vals <- vals[seq_len(n_expected)]
+          vals
+        }
+        
+        pad_vals <- function(vals, n) {
+          vals <- as.character(vals)
+          if (length(vals) < n) vals <- c(vals, rep(NA_character_, n - length(vals)))
+          if (length(vals) > n) vals <- vals[seq_len(n)]
+          vals
+        }
+        
+        sky_line <- lines_trim[
+          grepl("^Sky\\s*\\(\\s*%\\s*\\)", lines_trim, ignore.case = TRUE) |
+            grepl("^Sky cover", lines_trim, ignore.case = TRUE)
+        ]
+        if (length(sky_line) > 0) {
+          sky_raw <- strip_label(sky_line[1], "SKY")
+          out$SKY <- split_sky_cells(sky_raw, length(time_vals))
+        }
+        
+        temp_line <- lines_trim[grepl("^Temp", lines_trim, ignore.case = TRUE)]
+        if (length(temp_line) > 0) {
+          temp_raw <- strip_label(temp_line[1], "TEMP")
+          temp_vals <- split_cells(
+            temp_raw,
+            n_expected = length(time_vals),
+            allow_single_space_fallback = FALSE
+          )
+          out$TEMP <- pad_vals(temp_vals, length(time_vals))
+        }
+        
+        rh_line <- lines_trim[grepl("^RH", lines_trim, ignore.case = TRUE)]
+        if (length(rh_line) > 0) {
+          rh_raw <- strip_label(rh_line[1], "RH")
+          rh_vals <- unlist(strsplit(trimws(rh_raw), "\\s+"))
+          rh_vals <- trimws(rh_vals)
+          rh_vals <- rh_vals[nzchar(rh_vals)]
+          out$RH <- pad_vals(rh_vals, length(time_vals))
+        }
+        
+        wind_line <- lines_trim[
+          grepl("^Surface\\s*(wnd|wind)\\s*spd", lines_trim, ignore.case = TRUE) |
+            grepl("^20\\s*ft\\s*wind\\s*spd", lines_trim, ignore.case = TRUE) |
+            grepl("^20\\s*ft\\s*wind\\s*mph", lines_trim, ignore.case = TRUE) |
+            (grepl("^20\\s*ft\\s*wind", lines_trim, ignore.case = TRUE) &
+               !grepl("^20\\s*ft\\s*wind\\s*(dir|gust)", lines_trim, ignore.case = TRUE))
         ]
         
-        data_lines <- sub("^RH\\.*", "RH ", data_lines, ignore.case = TRUE)
-        data_lines <- sub(
-          "^(20\\s*ft\\s*wind(\\s*(spd|speed|mph))?|Surface\\s*(wnd|wind)\\s*spd)(?!\\s*(gust|dir))",
-          "WIND ",
-          data_lines,
-          ignore.case = TRUE,
-          perl = TRUE
-        )
-        data_lines <- sub("^Temp\\.*", "TEMP ", data_lines, ignore.case = TRUE)
-        data_lines <- sub("^Sky\\s*\\(\\s*%\\s*\\)", "SKY ", data_lines, ignore.case = TRUE)
-        data_lines <- str_remove_all(data_lines, "G\\d+")
-        data_lines <- str_remove_all(data_lines, "\\b[NESW]{1,3}\\b\\s*")
-        data_lines <- gsub("[.()%]", " ", data_lines)
-        data_lines <- gsub("\\s+", " ", data_lines)
-        data_lines <- trimws(data_lines)
-        data_lines_split <- strsplit(data_lines, " ")
-        data_lines_split <- append(data_lines_split, time_line, after = 0)
-        
-        headers <- paste0("ch_", chunk_no, "_", seq_along(time_line[[1]]))
-        out <- do.call(rbind, lapply(data_lines_split, function(x) {
-          chunk_df <- data.frame(t(x), stringsAsFactors = FALSE)
-          colnames(chunk_df) <- headers
-          chunk_df
-        }))
+        if (length(wind_line) > 0) {
+          wind_raw <- strip_label(wind_line[1], "WIND")
+          wind_cells <- split_cells(
+            wind_raw,
+            n_expected = length(time_vals),
+            allow_single_space_fallback = FALSE
+          )
+          wind_cells <- pad_vals(wind_cells, length(time_vals))
+          wind_vals <- stringr::str_extract(wind_cells, "\\d+")
+          out$WIND <- wind_vals
+        }
         
         out
-      })
+      }
       
-      all_times_df <- do.call(cbind, time_dataframes)
-      all_times_df <- all_times_df %>%
-        select(-which(apply(all_times_df, 2, function(col) any(grepl("TIME", col))))[-1])
+      chunk_dfs <- purrr::map(time_chunks, parse_time_chunk)
+      chunk_dfs <- purrr::compact(chunk_dfs)
+      if (length(chunk_dfs) == 0) return(NULL)
       
-      t_all_times_df <- all_times_df[-1] %>%
-        t() %>%
-        as.data.frame() %>%
-        setNames(all_times_df[, 1])
+      t_all_times_df <- dplyr::bind_rows(chunk_dfs)
+      if (nrow(t_all_times_df) == 0) return(NULL)
       
       t_all_times_df <- t_all_times_df %>%
         mutate(
-          TIME_24 = sapply(TIME, convert_to_24hr),
-          hour_num = as.integer(TIME_24)
-        )
+          TIME = as.character(TIME),
+          TIME_24 = vapply(TIME, convert_to_24hr, character(1)),
+          hour_num = suppressWarnings(as.integer(TIME_24))
+        ) %>%
+        filter(!is.na(TIME_24))
+      
+      if (nrow(t_all_times_df) == 0) return(NULL)
       
       base_date <- as.Date(spot_info$date, format = "%m/%d/%y")
       
@@ -244,9 +361,12 @@ parse_spot_forecasts <- function(df) {
       )
       
       time_all_times_df <- t_all_times_df %>%
-        select(-TIME) %>%
-        mutate(across(where(is.character), as.numeric)) %>%
         mutate(
+          TEMP = suppressWarnings(as.numeric(TEMP)),
+          RH = suppressWarnings(as.numeric(RH)),
+          WIND = suppressWarnings(as.numeric(WIND)),
+          SKY_RAW = trimws(as.character(SKY)),
+          SKY_NUM = suppressWarnings(as.numeric(SKY_RAW)),
           forecast_date = forecast_dates,
           DATETIME = as.POSIXct(
             paste(forecast_date, paste0(TIME_24, ":00:00")),
@@ -255,17 +375,25 @@ parse_spot_forecasts <- function(df) {
         ) %>%
         filter(DATETIME >= filter_start, DATETIME <= filter_end) %>%
         arrange(DATETIME) %>%
-        select(DATETIME, TEMP, RH, WIND, SKY)
+        select(DATETIME, TEMP, RH, WIND, SKY = SKY_RAW, SKY_NUM)
       
       rownames(time_all_times_df) <- NULL
       
       sfog_df <- time_all_times_df %>%
         mutate(
-          sky_screen = ifelse(SKY <= 40, "critical", ifelse(SKY > 60, "minimal", "watch_out")),
+          sky_screen = case_when(
+            !is.na(SKY_NUM) & SKY_NUM <= 40 ~ "critical",
+            !is.na(SKY_NUM) & SKY_NUM > 60 ~ "minimal",
+            !is.na(SKY_NUM) ~ "watch_out",
+            SKY %in% c("MCR", "CLR") ~ "critical",
+            SKY == "PC" ~ "watch_out",
+            TRUE ~ "minimal"
+          ),
           temp_screen = ifelse(TEMP <= 55, "critical", ifelse(TEMP > 70, "minimal", "watch_out")),
           rh_screen = ifelse(RH >= 90, "critical", ifelse(RH < 70, "minimal", "watch_out")),
           wind_screen = ifelse(WIND <= 4, "critical", ifelse(WIND > 7, "minimal", "watch_out"))
-        )
+        ) %>%
+        select(DATETIME, TEMP, RH, WIND, SKY, sky_screen, temp_screen, rh_screen, wind_screen)
       
       sfog_df
     }, error = function(e) {
