@@ -129,6 +129,7 @@ stq_df_fun <- function(STQ_URL) {
       mutate(
         spot_id = str_match(productText, "OFILE:\\s*([0-9.]+)")[, 2],
         project_name = str_match(productText, "PROJECT NAME:\\s*([^\\n]+)")[, 2],
+        project_type = str_match(productText, "PROJECT TYPE:\\s*([^\\n]+)")[,2],
         lat = as.numeric(str_match(productText, "DLAT:\\s*(-?[0-9.]+)")[, 2]),
         lon = -abs(as.numeric(str_match(productText, "DLON:\\s*(-?[0-9.]+)")[, 2])),
         date = str_match(productText, "DATE:\\s*(\\d{2}/\\d{2}/\\d{2})")[, 2],
@@ -551,6 +552,7 @@ build_cache <- function() {
       nws_spot_url = paste0("https://spot.weather.gov/forecasts/", spot_id_clean),
       issued = ifelse(date_issued == today_val, "Today", "Yesterday")
     ) %>% 
+    filter(str_to_upper(str_trim(project_type)) == "PRESCRIBED") %>% 
     group_by(nws_spot_url) %>% 
     arrange(desc(date_issued)) %>% 
     slice(1) %>% 
