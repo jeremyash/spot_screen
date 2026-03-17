@@ -158,7 +158,8 @@ ui <- fluidPage(
   titlePanel("USFS Region 8 Superfog Screener Pilot"),
   
   tags$head(
-    tags$link(rel = "icon", type = "image/x-icon", href = "favicon.ico")
+    HTML('<link rel="icon" href="favicon.ico" type="image/x-icon">'),
+    HTML('<link rel="shortcut icon" href="favicon.ico">')
   ),
   
    tags$script(HTML("
