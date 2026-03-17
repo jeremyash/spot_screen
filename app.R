@@ -870,7 +870,7 @@ server <- function(input, output, session) {
       )
     } else {
       sfog_box <- div(
-        style = "border:4px solid green; background-color:#DAF5DA; color:black; padding:12px; font-size:15px; margin:10px;",
+        style = "border:4px solid #777777; background-color:#D9D9D9; color:black; padding:12px; font-size:15px; margin:10px;",
         div(
           style = "font-weight:bold; font-size:18px; margin-bottom:6px;",
           "PB Piedmont Not Required"
