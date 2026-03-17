@@ -155,12 +155,13 @@ sfog_legend_box <- function(label, border, bg, text) {
 # -------------------------------------------------
 
 ui <- fluidPage(
-  titlePanel("USFS Region 8 Superfog Screener Pilot"),
   
   tags$head(
-    HTML('<link rel="icon" href="favicon.ico" type="image/x-icon">'),
-    HTML('<link rel="shortcut icon" href="favicon.ico">')
+    tags$link(rel = "icon", type = "image/x-icon", href = "favicon_final.ico"),
+    tags$link(rel = "shortcut icon", type = "image/x-icon", href = "favicon_final.ico")
   ),
+  
+  titlePanel("USFS Region 8 Superfog Screener Pilot"),
   
    tags$script(HTML("
     $(document).on('click', '#reset_map', function () {
