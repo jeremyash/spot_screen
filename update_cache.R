@@ -425,7 +425,7 @@ parse_spot_forecasts <- function(df) {
             !is.na(SKY_NUM) & SKY_NUM > 60 ~ "minimal",
             !is.na(SKY_NUM) ~ "watch_out",
             tolower(trimws(SKY)) %in% c("mcr", "clr", "clear", "mclear") ~ "critical",
-            tolower(trimws(SKY)) %in% c("pc", "pcldy") ~ "watch_out",
+            tolower(trimws(SKY)) %in% c("pc", "pcldy", "pcloudy") ~ "watch_out",
             TRUE ~ "minimal"
           ),
           temp_screen = ifelse(TEMP <= 55, "critical", ifelse(TEMP > 70, "minimal", "watch_out")),
