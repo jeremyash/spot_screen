@@ -97,7 +97,7 @@ spot_df_fun <- function(SPOT_URL) {
     out <- as.data.frame(spot_api_ls[2:9]) %>%
       mutate(
         spot_id = str_extract(productText, "(?<=\\.TAG\\s)[0-9.]+"),
-        usda = str_detect(productText, "usda\\.gov"),
+        usda = str_detect(productText, regex("\\busda\\.gov\\b|\\busfs\\b", ignore_case = TRUE)),
         issuanceTime = ymd_hms(issuanceTime, tz = "UTC"),
         date_issued = as.Date(with_tz(issuanceTime, "America/New_York"))
       ) %>%
