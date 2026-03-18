@@ -509,7 +509,7 @@ build_cache <- function() {
     stq_df_fun(u)
   }) %>%
     filter(spot_id %in% spot_api_df$spot_id) %>%
-    select(spot_id:time) %>%
+    select(req_api_id = X.id, spot_id:time) %>%
     distinct()
   
   log_msg("Matching STQ requests retained:", nrow(request_api_df))
