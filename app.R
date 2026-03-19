@@ -157,8 +157,8 @@ sfog_legend_box <- function(label, border, bg, text) {
 ui <- fluidPage(
   
   tags$head(
-    tags$link(rel = "icon", type = "image/x-icon", href = "favicon_final.ico"),
-    tags$link(rel = "shortcut icon", type = "image/x-icon", href = "favicon_final.ico")
+    tags$link(rel = "icon", type = "image/png", sizes = "32x32", href = "favicon-32x32.png"),
+    tags$link(rel = "shortcut icon", type = "image/png", href = "favicon-32x32.png")
   ),
   
   titlePanel("USFS Region 8 Superfog Screener Pilot"),
