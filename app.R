@@ -686,6 +686,7 @@ server <- function(input, output, session) {
         "<img src='", fire_icon_url_yesterday, "' style='width:24px; height:24px;'>",
         "</span>",
         "<span style='font-size:15px;'>Yesterday</span>",
+        "<input type='radio' name='date_layer_choice' value='Yesterday'>",
         "</label>",
         "</div>"
       )
