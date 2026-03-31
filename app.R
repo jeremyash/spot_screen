@@ -7,6 +7,9 @@ library(kableExtra)
 library(sf)
 library(httr2)
 library(jsonlite)
+library(rvest)
+library(xml2)
+library(AirMonitor)
 
 # -------------------------------------------------
 # STATIC DATA
@@ -105,7 +108,105 @@ make_fire_icon_path <- function(type = c("today", "yesterday")) {
     "black-fire-flame.png"
   }
 }
+# -------------------------------------------------
+# AIRNOW AQI FORECAST DATA
+# -------------------------------------------------
 
+namedColors <- US_AQI$colors_EPA
+names(namedColors) <- c(
+  US_AQI$names_eng[1:2],
+  "Unhealthy for Sensitive Groups",
+  US_AQI$names_eng[4:6]
+)
+
+extract_aqi_cat <- function(x) {
+  vapply(
+    x,
+    function(txt) {
+      tryCatch(
+        {
+          html_text(html_elements(read_html(txt), "i"))[1]
+        },
+        error = function(e) NA_character_
+      )
+    },
+    FUN.VALUE = character(1)
+  )
+}
+
+airnow_today <- NULL
+
+tryCatch(
+  expr = {
+    sf_airnow_today <-
+      sf::st_read(
+        "https://s3-us-west-1.amazonaws.com/files.airnowtech.org/airnow/today/forecast_today_usa.kml",
+        quiet = TRUE
+      ) %>%
+      sf::st_zm()
+    
+    if ("description" %in% names(sf_airnow_today)) {
+      sf_airnow_today <-
+        sf_airnow_today %>%
+        mutate(
+          aqi_cat = extract_aqi_cat(description),
+          aqi_color = unname(namedColors[aqi_cat])
+        ) %>%
+        filter(aqi_cat != "Good")
+      airnow_today <- sf_airnow_today
+    } else if ("Description" %in% names(sf_airnow_today)) {
+      sf_airnow_today <-
+        sf_airnow_today %>%
+        mutate(
+          aqi_cat = extract_aqi_cat(Description),
+          aqi_color = unname(namedColors[aqi_cat])
+        ) %>%
+        filter(aqi_cat != "Good")
+      airnow_today <- sf_airnow_today
+    }
+  },
+  error = function(e) {
+    message("FAILED TO LOAD forecast_today_usa.kml")
+    message(e)
+  }
+)
+
+airnow_tomorrow <- NULL
+
+tryCatch(
+  expr = {
+    sf_airnow_tomorrow <-
+      sf::st_read(
+        "https://s3-us-west-1.amazonaws.com/files.airnowtech.org/airnow/today/forecast_tomorrow_usa.kml",
+        quiet = TRUE
+      ) %>%
+      sf::st_zm()
+    
+    if ("description" %in% names(sf_airnow_tomorrow)) {
+      sf_airnow_tomorrow <-
+        sf_airnow_tomorrow %>%
+        mutate(
+          aqi_cat = extract_aqi_cat(description),
+          aqi_color = unname(namedColors[aqi_cat])
+        ) %>%
+        filter(aqi_cat != "Good")
+      airnow_tomorrow <- sf_airnow_tomorrow
+    } else if ("Description" %in% names(sf_airnow_tomorrow)) {
+      sf_airnow_tomorrow <-
+        sf_airnow_tomorrow %>%
+        mutate(
+          aqi_cat = extract_aqi_cat(Description),
+          aqi_color = unname(namedColors[aqi_cat])
+        ) %>%
+        filter(aqi_cat != "Good")
+      airnow_tomorrow <- sf_airnow_tomorrow
+    }
+  },
+  error = function(e) {
+    message("FAILED TO LOAD forecast_tomorrow_usa.kml")
+    message(e)
+  }
+)
 # -------------------------------------------------
 # INITIAL CACHE LOAD
 # -------------------------------------------------
@@ -157,20 +258,20 @@ sfog_legend_box <- function(label, border, bg, text) {
 ui <- fluidPage(
   
   tags$head(
-    # SVG (preferred in modern browsers)
-    tags$link(rel = "icon", type = "image/svg+xml", href = "favicon.svg"),
+    # SVG (PRIMARY)
+    tags$link(rel = "icon", type = "image/svg+xml", href = "favicon_v2.svg"),
     
-    # ICO fallback (important for compatibility)
-    tags$link(rel = "icon", type = "image/x-icon", href = "favicon.ico"),
-    tags$link(rel = "shortcut icon", href = "favicon.ico"),
+    # PNG fallback (helps Chrome before ICO sometimes)
+    tags$link(rel = "icon", type = "image/png", sizes = "32x32", href = "favicon-32_v2.png"),
+    tags$link(rel = "icon", type = "image/png", sizes = "16x16", href = "favicon-16_v2.png"),
     
-    # Optional: PNG sizes (helps some browsers pick best resolution)
-    tags$link(rel = "icon", type = "image/png", sizes = "32x32", href = "favicon-32.png"),
-    tags$link(rel = "icon", type = "image/png", sizes = "16x16", href = "favicon-16.png"),
+    # ICO fallback (last resort)
+    tags$link(rel = "icon", type = "image/x-icon", href = "favicon_v2.ico"),
+    tags$link(rel = "shortcut icon", href = "favicon_v2.ico"),
     
     # Safari pinned tab
-    tags$link(rel = "mask-icon", href = "safari-pinned.svg", color = "#3A3640")
-  ),
+    tags$link(rel = "mask-icon", href = "safari-pinned_v2.svg", color = "#3A3640")
+  ), 
   
   titlePanel("USFS Region 8 Superfog Screener Pilot"),
   
@@ -474,7 +575,8 @@ server <- function(input, output, session) {
       direction = "auto"
     )
     
-    m <- leaflet() |>
+    m <- leaflet()
+    m <- m |>
       addTiles() |>
       setView(lng = -88.11, lat = 34.95, zoom = 5) |>
       addPolygons(
@@ -495,6 +597,36 @@ server <- function(input, output, session) {
         smoothFactor = 0.5,
         options = pathOptions(clickable = TRUE)
       )
+    
+    if (!is.null(airnow_today) && nrow(airnow_today) > 0) {
+      m <- m |>
+        addPolygons(
+          data = airnow_today,
+          fillColor = ~aqi_color,
+          fillOpacity = 0.8,
+          color = ~aqi_color,
+          weight = 1,
+          opacity = 0.8,
+          smoothFactor = 0.5,
+          popup = ~paste0("<strong>AQI Forecast Today</strong><br>", aqi_cat),
+          group = "AQI Forecast Today"
+        )
+    }
+    
+    if (!is.null(airnow_tomorrow) && nrow(airnow_tomorrow) > 0) {
+      m <- m |>
+        addPolygons(
+          data = airnow_tomorrow,
+          fillColor = ~aqi_color,
+          fillOpacity = 0.8,
+          color = ~aqi_color,
+          weight = 1,
+          opacity = 0.8,
+          smoothFactor = 0.5,
+          popup = ~paste0("<strong>AQI Forecast Tomorrow</strong><br>", aqi_cat),
+          group = "AQI Forecast Tomorrow"
+        )
+    }
     
     if (nrow(df_map) > 0 && all(c("lon", "lat") %in% names(df_map))) {
       df_today <- df_map %>% filter(issued == "Today")
@@ -554,7 +686,6 @@ server <- function(input, output, session) {
         "<img src='", fire_icon_url_yesterday, "' style='width:24px; height:24px;'>",
         "</span>",
         "<span style='font-size:15px;'>Yesterday</span>",
-        "<input type='radio' name='date_layer_choice' value='Yesterday'>",
         "</label>",
         "</div>"
       )
@@ -566,7 +697,12 @@ server <- function(input, output, session) {
         )
     }
     
-    m |>
+    m <- m |>
+      addLayersControl(
+        overlayGroups = c("AQI Forecast Today", "AQI Forecast Tomorrow"),
+        options = layersControlOptions(collapsed = TRUE),
+        position = "bottomleft"
+      ) |>
       addControl(
         html = "
           <button id='reset_map' 
@@ -583,6 +719,8 @@ server <- function(input, output, session) {
         ",
         position = "topright"
       )
+    
+    m
   })
   
   handle_burn_click <- function(click) {
@@ -659,6 +797,12 @@ server <- function(input, output, session) {
     leafletProxy("forecast_map") |>
       showGroup("Today") |>
       hideGroup("Yesterday")
+  })
+  
+  observe({
+    leafletProxy("forecast_map") |>
+      hideGroup("AQI Forecast Today") |>
+      hideGroup("AQI Forecast Tomorrow")
   })
   
   observeEvent(input$reset_map_click, {
