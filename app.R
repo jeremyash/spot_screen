@@ -659,44 +659,37 @@ server <- function(input, output, session) {
             icon = fire_icon_yesterday
           )
       }
-      
-      legend_toggle_html <- paste0(
-        "<div style='",
-        "background:white;",
-        "padding:8px 10px;",
-        "border-radius:6px;",
-        "box-shadow:0 0 6px rgba(0,0,0,0.3);",
-        "font-size:14px;",
-        "line-height:1.2;",
-        "min-width:180px;",
-        "font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;",
-        "'>",
-        "<div style='font-weight:600; font-size:16px; margin-bottom:6px;'>Date Issued</div>",
-        
-        "<label style='display:grid; grid-template-columns:30px 1fr 18px; align-items:center; column-gap:8px; margin-bottom:4px; cursor:pointer;'>",
-        "<span style='display:flex; align-items:center; justify-content:center;'>",
-        "<img src='", fire_icon_url_today, "' style='width:24px; height:24px;'>",
-        "</span>",
-        "<span style='font-size:15px;'>Today</span>",
-        "<input type='radio' name='date_layer_choice' value='Today' checked>",
-        "</label>",
-        
-        "<label style='display:grid; grid-template-columns:30px 1fr 18px; align-items:center; column-gap:8px; margin-bottom:0; cursor:pointer;'>",
-        "<span style='display:flex; align-items:center; justify-content:center;'>",
-        "<img src='", fire_icon_url_yesterday, "' style='width:24px; height:24px;'>",
-        "</span>",
-        "<span style='font-size:15px;'>Yesterday</span>",
-        "<input type='radio' name='date_layer_choice' value='Yesterday'>",
-        "</label>",
-        "</div>"
-      )
-      
-      m <- m |>
-        addControl(
-          html = legend_toggle_html,
-          position = "bottomright"
-        )
     }
+    
+    legend_toggle_html <- paste0(
+      "<div style='background:white;padding:8px 10px;border-radius:6px;",
+      "box-shadow:0 0 6px rgba(0,0,0,0.3);font-size:14px;line-height:1.2;",
+      "min-width:180px;font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;'>",
+      "<div style='font-weight:600; font-size:16px; margin-bottom:6px;'>Date Issued</div>",
+      
+      "<label style='display:grid; grid-template-columns:30px 1fr 18px; align-items:center; column-gap:8px; margin-bottom:4px; cursor:pointer;'>",
+      "<span style='display:flex; align-items:center; justify-content:center;'>",
+      "<img src='", fire_icon_url_today, "' style='width:24px; height:24px;'>",
+      "</span>",
+      "<span style='font-size:15px;'>Today</span>",
+      "<input type='radio' name='date_layer_choice' value='Today' checked>",
+      "</label>",
+      
+      "<label style='display:grid; grid-template-columns:30px 1fr 18px; align-items:center; column-gap:8px; margin-bottom:0; cursor:pointer;'>",
+      "<span style='display:flex; align-items:center; justify-content:center;'>",
+      "<img src='", fire_icon_url_yesterday, "' style='width:24px; height:24px;'>",
+      "</span>",
+      "<span style='font-size:15px;'>Yesterday</span>",
+      "<input type='radio' name='date_layer_choice' value='Yesterday'>",
+      "</label>",
+      "</div>"
+    )
+    
+    m <- m |>
+      addControl(
+        html = legend_toggle_html,
+        position = "bottomright"
+      )
     
     m <- m |>
       addLayersControl(
@@ -1103,11 +1096,40 @@ server <- function(input, output, session) {
   }
   
   output$selected_info_map <- renderUI({
-    build_selected_info("Click a fire icon on the map to view superfog screening results.")
+    df <- cache_data()$forecast_df
+    
+    active_layer <- input$map_layer_choice
+    if (is.null(active_layer)) active_layer <- "Today"
+    
+    has_active_layer <- any(df$issued == active_layer, na.rm = TRUE)
+    
+    prompt_text <- if (!has_active_layer && active_layer == "Today") {
+      "There are no spot forecasts issued for USFS Region 8 units today."
+    } else if (!has_active_layer && active_layer == "Yesterday") {
+      "There are no spot forecasts issued for USFS Region 8 units yesterday."
+    } else {
+      "Click a fire icon on the map to view superfog screening results."
+    }
+    
+    build_selected_info(prompt_text)
   })
   
+  
   output$selected_info_table <- renderUI({
-    build_selected_info("Click a burn unit in the table to view superfog screening results.")
+    df <- cache_data()$forecast_df
+    
+    has_today <- any(df$issued == "Today", na.rm = TRUE)
+    has_yesterday <- any(df$issued == "Yesterday", na.rm = TRUE)
+    
+    prompt_text <- if (!has_today) {
+      "There are no spot forecasts issued for USFS Region 8 units today."
+    } else if (!has_yesterday) {
+      "There are no spot forecasts issued for USFS Region 8 units yesterday."
+    } else {
+      "Click a burn unit in the table to view superfog screening results."
+    }
+    
+    build_selected_info(prompt_text)
   })
 }
 
