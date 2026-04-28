@@ -776,6 +776,11 @@ server <- function(input, output, session) {
   observeEvent(input$map_layer_choice, {
     req(input$map_layer_choice)
     
+    selected_burn_id(NULL)
+    
+    leafletProxy("forecast_map") |>
+      clearPopups()
+    
     if (input$map_layer_choice == "Today") {
       leafletProxy("forecast_map") |>
         showGroup("Today") |>
@@ -800,6 +805,8 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$reset_map_click, {
+    selected_burn_id(NULL)
+    
     leafletProxy("forecast_map") |>
       clearPopups() |>
       setView(
