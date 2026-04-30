@@ -2,7 +2,7 @@ name: Archive spot forecast text
 
 on:
   schedule:
-    - cron: "15 6 * * *"
+    - cron: "23 23 * * *"
   workflow_dispatch:
 
 permissions:
