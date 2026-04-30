@@ -52,7 +52,7 @@ forecast_with_forest <- forecast_sf %>%
     forest_safe = safe_name(forest_name),
     forest_dir = file.path(out_dir, forest_safe),
     file_name = paste0(
-      "date_", file_date,
+      file_date,
       "__spot_", spot_safe,
       "__project_", project_safe,
       ".txt"
