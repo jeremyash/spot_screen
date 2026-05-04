@@ -1,13 +1,5 @@
 name: Archive spot forecast text
-run: |
-          mkdir -p cache-repo/text-archive
 
-          if [ -d main-repo/text-archive ]; then
-            cp -R main-repo/text-archive/. cache-repo/text-archive/
-          else
-            echo "No text-archive directory created. Nothing to copy."
-          fi
-    
 on:
   schedule:
     - cron: "23 23 * * *"
@@ -74,7 +66,12 @@ jobs:
       - name: Copy text archive to cache branch
         run: |
           mkdir -p cache-repo/text-archive
-          cp -R main-repo/text-archive/. cache-repo/text-archive/
+
+          if [ -d main-repo/text-archive ]; then
+            cp -R main-repo/text-archive/. cache-repo/text-archive/
+          else
+            echo "No text-archive directory created. Nothing to copy."
+          fi
 
       - name: Commit archived text files
         working-directory: cache-repo
@@ -87,5 +84,3 @@ jobs:
           git diff --staged --quiet || git commit -m "Archive spot forecast text files"
 
           git push origin cache-data
-
-
