@@ -86,8 +86,6 @@ jobs:
 
           git diff --staged --quiet || git commit -m "Archive spot forecast text files"
 
-<<<<<<< Updated upstream
           git push origin cache-data
-=======
-          git push origin cache-data
->>>>>>> Stashed changes
+
+
