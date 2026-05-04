@@ -1,5 +1,17 @@
 name: Archive spot forecast text
+<<<<<<< Updated upstream
 
+=======
+  run: |
+    mkdir -p cache-repo/text-archive
+
+    if [ -d main-repo/text-archive ]; then
+      cp -R main-repo/text-archive/. cache-repo/text-archive/
+    else
+      echo "No text-archive directory created. Nothing to copy."
+    fi
+    
+>>>>>>> Stashed changes
 on:
   schedule:
     - cron: "23 23 * * *"
@@ -78,4 +90,8 @@ jobs:
 
           git diff --staged --quiet || git commit -m "Archive spot forecast text files"
 
+<<<<<<< Updated upstream
           git push origin cache-data
+=======
+          git push origin cache-data
+>>>>>>> Stashed changes
