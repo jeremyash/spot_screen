@@ -5,6 +5,7 @@ library(lubridate)
 
 cache_path <- "cache/superfog_cache.rds"
 out_dir <- "text-archive"
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 safe_name <- function(x, allow_decimal = FALSE) {
   x <- ifelse(is.na(x) | !nzchar(x), "Unknown", x)
