@@ -1,17 +1,13 @@
 name: Archive spot forecast text
-<<<<<<< Updated upstream
+run: |
+          mkdir -p cache-repo/text-archive
 
-=======
-  run: |
-    mkdir -p cache-repo/text-archive
-
-    if [ -d main-repo/text-archive ]; then
-      cp -R main-repo/text-archive/. cache-repo/text-archive/
-    else
-      echo "No text-archive directory created. Nothing to copy."
-    fi
+          if [ -d main-repo/text-archive ]; then
+            cp -R main-repo/text-archive/. cache-repo/text-archive/
+          else
+            echo "No text-archive directory created. Nothing to copy."
+          fi
     
->>>>>>> Stashed changes
 on:
   schedule:
     - cron: "23 23 * * *"
