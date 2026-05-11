@@ -1113,7 +1113,7 @@ server <- function(input, output, session) {
     prompt_text <- if (!has_active_layer && active_layer == "Today") {
       "There are no spot forecasts issued for USFS Region 8 units today."
     } else if (!has_active_layer && active_layer == "Yesterday") {
-      "There are no spot forecasts issued for USFS Region 8 units yesterday."
+      "There were no spot forecasts issued for USFS Region 8 units yesterday."
     } else {
       "Click a fire icon on the map to view superfog screening results."
     }
@@ -1131,7 +1131,7 @@ server <- function(input, output, session) {
     prompt_text <- if (!has_today) {
       "There are no spot forecasts issued for USFS Region 8 units today."
     } else if (!has_yesterday) {
-      "There are no spot forecasts issued for USFS Region 8 units yesterday."
+      "There were no spot forecasts issued for USFS Region 8 units yesterday."
     } else {
       "Click a burn unit in the table to view superfog screening results."
     }
