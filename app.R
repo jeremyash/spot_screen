@@ -23,9 +23,7 @@ source("R/map_helpers.R")
 source("R/ui_helpers.R")
 
 
-# -------------------------------------------------
-# STATIC DATA
-# -------------------------------------------------
+# STATIC DATA AND CACHE----------------------------------------------
 
 wfo <- read_csv("r8_wfo.csv", show_col_types = FALSE)
 
@@ -38,42 +36,10 @@ r8 <- st_read("region_8", quiet = TRUE) |>
 r8_forests$forest_id <- seq_len(nrow(r8_forests))
 
 cache_url <- "https://raw.githubusercontent.com/jeremyash/spot_screen/cache-data/cache/superfog_cache.rds"
-message("Sourcing helper files...")
-print(system.time({
-  source("R/cache_helpers.R")
-  source("R/map_helpers.R")
-  source("R/ui_helpers.R")
-}))
 
-format_issued_datetime <- function(x) {
-  if (length(x) == 0 || all(is.na(x))) return(NA_character_)
-  
-  x_posix <- suppressWarnings(ymd_hms(x, tz = "UTC"))
-  
-  if (all(is.na(x_posix))) {
-    x_posix <- suppressWarnings(ymd_hm(x, tz = "UTC"))
-  }
-  
-  if (all(is.na(x_posix))) {
-    x_posix <- suppressWarnings(as.POSIXct(x, tz = "UTC"))
-  }
-  
-  if (all(is.na(x_posix))) {
-    return(as.character(x))
-  }
-  
-  format(with_tz(x_posix, "America/New_York"), "%Y-%m-%d %H:%M %Z")
-}
 
-make_fire_icon_path <- function(type = c("today", "yesterday")) {
-  type <- match.arg(type)
-  
-  if (type == "today") {
-    "red-fire-flame.png"
-  } else {
-    "black-fire-flame.png"
-  }
-}
+
+
 # -------------------------------------------------
 # AIRNOW AQI FORECAST DATA
 # -------------------------------------------------
@@ -538,15 +504,7 @@ server <- function(input, output, session) {
       iconAnchorY = 12
     )
     
-    marker_label_opts <- labelOptions(
-      style = list(
-        "font-size" = "14px",
-        "font-weight" = "bold",
-        "padding" = "6px 10px"
-      ),
-      direction = "auto"
-    )
-    
+   
     m <- leaflet()
     m <- m |>
       addTiles() |>

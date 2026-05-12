@@ -13,3 +13,23 @@ download_remote_cache <- function(url) {
   
   x
 }
+
+format_issued_datetime <- function(x) {
+  if (length(x) == 0 || all(is.na(x))) return(NA_character_)
+  
+  x_posix <- suppressWarnings(ymd_hms(x, tz = "UTC"))
+  
+  if (all(is.na(x_posix))) {
+    x_posix <- suppressWarnings(ymd_hm(x, tz = "UTC"))
+  }
+  
+  if (all(is.na(x_posix))) {
+    x_posix <- suppressWarnings(as.POSIXct(x, tz = "UTC"))
+  }
+  
+  if (all(is.na(x_posix))) {
+    return(as.character(x))
+  }
+  
+  format(with_tz(x_posix, "America/New_York"), "%Y-%m-%d %H:%M %Z")
+}
