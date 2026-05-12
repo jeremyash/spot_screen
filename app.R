@@ -273,7 +273,13 @@ ui <- fluidPage(
     tags$link(rel = "mask-icon", href = "safari-pinned_v2.svg", color = "#3A3640")
   ), 
   
-  titlePanel("USFS Region 8 Superfog Screener Pilot"),
+  titlePanel(
+    if (IS_DEV) {
+      "USFS Region 8 Superfog Screener Pilot — DEV"
+    } else {
+      "USFS Region 8 Superfog Screener Pilot"
+    }
+  ),
   
    tags$script(HTML("
     $(document).on('click', '#reset_map', function () {
