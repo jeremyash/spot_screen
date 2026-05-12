@@ -408,12 +408,28 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
-  # read cache data
+  # -------------------------------------------------
+  # STATE / CACHE OBJECTS
+  # -------------------------------------------------
+  
   cache_data <- reactiveVal(initial_cache)
   
-  # refresh cache date
+  airnow_today_data <- reactiveVal(NULL)
+  airnow_tomorrow_data <- reactiveVal(NULL)
+  
+  sfog_cache <- reactiveVal(NULL)
+  sfog_loaded <- reactiveVal(FALSE)
+  
+  selected_burn_id <- reactiveVal(NULL)
+  
+  
+  # -------------------------------------------------
+  # CACHE LOADING OBSERVERS
+  # -------------------------------------------------
+  
   observe({
     invalidateLater(60 * 1000, session)
+    
     try({
       fresh_cache <- download_remote_cache(
         paste0(cache_url, "?t=", as.integer(Sys.time()))
@@ -422,75 +438,20 @@ server <- function(input, output, session) {
     }, silent = TRUE)
   })
   
-  # set up aqi polygons
-  airnow_today_data <- reactiveVal(NULL)
-  airnow_tomorrow_data <- reactiveVal(NULL)
-  
-  observeEvent(input$forecast_map_groups, {
-    active_groups <- input$forecast_map_groups
-    
-    # AQI Today
-    if ("AQI Forecast Today" %in% active_groups) {
-      
-      if (is.null(airnow_today_data())) {
-        airnow_today_data(load_airnow_kml("today"))
-      }
-      
-      leafletProxy("forecast_map") |>
-        clearGroup("AQI Forecast Today") |>
-        addPolygons(
-          data = airnow_today_data(),
-          fillColor = ~aqi_color,
-          fillOpacity = 0.8,
-          color = ~aqi_color,
-          weight = 1,
-          opacity = 0.8,
-          smoothFactor = 0.5,
-          popup = ~paste0("<strong>AQI Forecast Today</strong><br>", aqi_cat),
-          group = "AQI Forecast Today"
-        ) |>
-        showGroup("AQI Forecast Today")
-      
-    } else {
-      leafletProxy("forecast_map") |>
-        hideGroup("AQI Forecast Today")
-    }
-    
-    # AQI Tomorrow
-    if ("AQI Forecast Tomorrow" %in% active_groups) {
-      
-      if (is.null(airnow_tomorrow_data())) {
-        airnow_tomorrow_data(load_airnow_kml("tomorrow"))
-      }
-      
-      leafletProxy("forecast_map") |>
-        clearGroup("AQI Forecast Tomorrow") |>
-        addPolygons(
-          data = airnow_tomorrow_data(),
-          fillColor = ~aqi_color,
-          fillOpacity = 0.8,
-          color = ~aqi_color,
-          weight = 1,
-          opacity = 0.8,
-          smoothFactor = 0.5,
-          popup = ~paste0("<strong>AQI Forecast Tomorrow</strong><br>", aqi_cat),
-          group = "AQI Forecast Tomorrow"
-        ) |>
-        showGroup("AQI Forecast Tomorrow")
-      
-    } else {
-      leafletProxy("forecast_map") |>
-        hideGroup("AQI Forecast Tomorrow")
-    }
-  }, ignoreInit = TRUE)
-  
-  # set up burn id parameter
-  selected_burn_id <- reactiveVal(NULL)
-  
-  
   observeEvent(input$main_tabs, {
-    selected_burn_id(NULL)
+    if (input$main_tabs == "Superfog Risk" && !sfog_loaded()) {
+      message("Loading superfog visualization cache...")
+      
+      # placeholder for future cache load
+      
+      sfog_loaded(TRUE)
+    }
   })
+  
+  
+  # -------------------------------------------------
+  # SHARED REACTIVES
+  # -------------------------------------------------
   
   burns_with_forest <- reactive({
     forecast_df <- cache_data()$forecast_df
@@ -518,6 +479,145 @@ server <- function(input, output, session) {
       mutate(forest = if_else(is.na(forest), "Not matched", forest))
   })
   
+  
+  # -------------------------------------------------
+  # HELPER FUNCTIONS INSIDE SERVER
+  # -------------------------------------------------
+  
+  build_selected_info <- function(prompt_text) {
+    clicked_id <- selected_burn_id()
+    
+    if (is.null(clicked_id)) {
+      return(
+        div(
+          style = "
+            margin-top:20px;
+            padding:15px;
+            border:2px dashed #cccccc;
+            background:#f9f9f9;
+            text-align:center;
+            font-size:18px;
+          ",
+          prompt_text
+        )
+      )
+    }
+    
+    forecast_df <- cache_data()$forecast_df
+    sfog_tables <- cache_data()$sfog_tables
+    
+    idx <- which(forecast_df$spot_id == clicked_id)
+    
+    if (length(idx) == 0) return(NULL)
+    
+    spot_url <- forecast_df$nws_spot_url[idx]
+    project <- forecast_df$project_name[idx]
+    sfog_df <- sfog_tables[[idx]]
+    issued_display <- format_issued_datetime(forecast_df$issuanceTime[idx])
+    
+    if (is.null(sfog_df)) {
+      return(
+        HTML(paste0(
+          'Unable to screen. Please consult your <a href="',
+          spot_url,
+          '" target="_blank">spot forecast</a>.'
+        ))
+      )
+    }
+    
+    sfog_status <- sfog_df %>%
+      rowwise() %>%
+      mutate(
+        critical_count = sum(
+          c_across(c(sky_screen, temp_screen, rh_screen, wind_screen)) %in%
+            c("critical", "watch_out")
+        )
+      ) %>%
+      ungroup()
+    
+    total_max <- max(sfog_status$critical_count, na.rm = TRUE)
+    
+    if (total_max == 4) {
+      sfog_box <- div(
+        style = "border:4px solid red; background-color:#FFDADA; color:black; padding:12px; font-size:15px; margin:10px;",
+        div(style = "font-weight:bold; font-size:18px; margin-bottom:6px;", "PB Piedmont Required"),
+        HTML('Superfog criteria have been met. Please run a <a href="https://piedmont.dri.edu/" target="_blank">PB Piedmont model</a>.')
+      )
+    } else if (total_max == 3) {
+      sfog_box <- div(
+        style = "border:4px solid orange; background-color:#FFE8CC; color:black; padding:12px; font-size:15px; margin:10px;",
+        div(style = "font-weight:bold; font-size:18px; margin-bottom:6px;", "PB Piedmont Recommended"),
+        HTML('Most superfog criteria have been met. Running a <a href="https://piedmont.dri.edu/" target="_blank">PB Piedmont model</a> is recommended.')
+      )
+    } else {
+      sfog_box <- div(
+        style = "border:4px solid #777777; background-color:#D9D9D9; color:black; padding:12px; font-size:15px; margin:10px;",
+        div(style = "font-weight:bold; font-size:18px; margin-bottom:6px;", "PB Piedmont Not Required"),
+        "Superfog criteria have not been met."
+      )
+    }
+    
+    kbl_table <- sfog_df %>%
+      mutate(
+        SKY = cell_spec(SKY, format = "html", extra_css = sapply(sky_screen, function(v) {
+          css <- if (v == "critical") "background-color:#CA0020;color:white;font-weight:bold;text-align:center;"
+          else if (v == "watch_out") "background-color:#FFDA00;color:black;font-weight:bold;text-align:center;"
+          else "background-color:#D9D9D9;color:black;font-weight:bold;text-align:center;"
+          paste0("display:block;width:100%;height:100%;", css)
+        })),
+        TEMP = cell_spec(TEMP, format = "html", extra_css = sapply(temp_screen, function(v) {
+          css <- if (v == "critical") "background-color:#CA0020;color:white;font-weight:bold;text-align:center;"
+          else if (v == "watch_out") "background-color:#FFDA00;color:black;font-weight:bold;text-align:center;"
+          else "background-color:#D9D9D9;color:black;font-weight:bold;text-align:center;"
+          paste0("display:block;width:100%;height:100%;", css)
+        })),
+        RH = cell_spec(RH, format = "html", extra_css = sapply(rh_screen, function(v) {
+          css <- if (v == "critical") "background-color:#CA0020;color:white;font-weight:bold;text-align:center;"
+          else if (v == "watch_out") "background-color:#FFDA00;color:black;font-weight:bold;text-align:center;"
+          else "background-color:#D9D9D9;color:black;font-weight:bold;text-align:center;"
+          paste0("display:block;width:100%;height:100%;", css)
+        })),
+        WIND = cell_spec(WIND, format = "html", extra_css = sapply(wind_screen, function(v) {
+          css <- if (v == "critical") "background-color:#CA0020;color:white;font-weight:bold;text-align:center;"
+          else if (v == "watch_out") "background-color:#FFDA00;color:black;font-weight:bold;text-align:center;"
+          else "background-color:#D9D9D9;color:black;font-weight:bold;text-align:center;"
+          paste0("display:block;width:100%;height:100%;", css)
+        }))
+      ) %>%
+      select(DATETIME, TEMP, RH, WIND, SKY) %>%
+      kbl(
+        escape = FALSE,
+        align = "c",
+        col.names = c(
+          "DATE-TIME",
+          "Temperature<br>(°F)",
+          "Relative<br>Humidity (%)",
+          "Wind<br>Speed (mph)",
+          "Cloud<br>Cover (%)"
+        )
+      ) %>%
+      kable_styling(full_width = FALSE, font_size = 16)
+    
+    tagList(
+      h3(style = "font-weight:bold; font-size:24px;", project),
+      div(style = "margin-bottom:6px; font-size:16px;", a("Full Spot Weather Forecast", href = spot_url, target = "_blank")),
+      div(style = "margin-bottom:10px; font-size:16px; color:#555;", paste0("Date Issued: ", issued_display)),
+      sfog_box,
+      HTML(as.character(kbl_table)),
+      div(
+        style = "text-align:center; font-size:18px; margin-top:8px;",
+        span(style = "background-color:#CA0020;color:white;padding:8px 12px;margin-right:6px;font-weight:bold;", "Critical"),
+        span(style = "background-color:#FFDA00;color:black;padding:8px 12px;margin-right:6px;font-weight:bold;", "Watch Out"),
+        span(style = "background-color:#D9D9D9;color:black;padding:8px 12px;margin-right:6px;font-weight:bold;", "Minimal Concern")
+      )
+    )
+  }
+  
+  
+  # -------------------------------------------------
+  # TEXT OUTPUTS
+  # -------------------------------------------------
+  
   output$last_refresh_text <- renderText({
     lr <- cache_data()$last_refresh
     
@@ -530,6 +630,11 @@ server <- function(input, output, session) {
       )
     }
   })
+  
+  
+  # -------------------------------------------------
+  # MAP OUTPUTS
+  # -------------------------------------------------
   
   output$forecast_map <- renderLeaflet({
     df <- cache_data()$forecast_df
@@ -554,9 +659,7 @@ server <- function(input, output, session) {
       iconAnchorY = 12
     )
     
-   
-    m <- leaflet()
-    m <- m |>
+    m <- leaflet() |>
       addTiles() |>
       setView(lng = -88.11, lat = 34.95, zoom = 5) |>
       addPolygons(
@@ -616,7 +719,6 @@ server <- function(input, output, session) {
       "box-shadow:0 0 6px rgba(0,0,0,0.3);font-size:14px;line-height:1.2;",
       "min-width:180px;font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;'>",
       "<div style='font-weight:600; font-size:16px; margin-bottom:6px;'>Date Issued</div>",
-      
       "<label style='display:grid; grid-template-columns:30px 1fr 18px; align-items:center; column-gap:8px; margin-bottom:4px; cursor:pointer;'>",
       "<span style='display:flex; align-items:center; justify-content:center;'>",
       "<img src='", fire_icon_url_today, "' style='width:24px; height:24px;'>",
@@ -624,7 +726,6 @@ server <- function(input, output, session) {
       "<span style='font-size:15px;'>Today</span>",
       "<input type='radio' name='date_layer_choice' value='Today' checked>",
       "</label>",
-      
       "<label style='display:grid; grid-template-columns:30px 1fr 18px; align-items:center; column-gap:8px; margin-bottom:0; cursor:pointer;'>",
       "<span style='display:flex; align-items:center; justify-content:center;'>",
       "<img src='", fire_icon_url_yesterday, "' style='width:24px; height:24px;'>",
@@ -635,13 +736,8 @@ server <- function(input, output, session) {
       "</div>"
     )
     
-    m <- m |>
-      addControl(
-        html = legend_toggle_html,
-        position = "bottomright"
-      )
-    
-    m <- m |>
+    m |>
+      addControl(html = legend_toggle_html, position = "bottomright") |>
       addLayersControl(
         overlayGroups = c("AQI Forecast Today", "AQI Forecast Tomorrow"),
         options = layersControlOptions(collapsed = TRUE),
@@ -663,9 +759,77 @@ server <- function(input, output, session) {
         ",
         position = "topright"
       )
-    
-    m
   })
+  
+  output$sfog_map <- renderLeaflet({
+    leaflet() |>
+      addTiles() |>
+      setView(lng = -88.11, lat = 34.95, zoom = 5) |>
+      addPolygons(
+        data = r8,
+        fill = FALSE,
+        color = "#000000",
+        weight = 2,
+        opacity = 1
+      )
+  })
+  
+  
+  # -------------------------------------------------
+  # MAP PROXY OBSERVERS
+  # -------------------------------------------------
+  
+  observeEvent(input$forecast_map_groups, {
+    active_groups <- input$forecast_map_groups
+    
+    if ("AQI Forecast Today" %in% active_groups) {
+      if (is.null(airnow_today_data())) {
+        airnow_today_data(load_airnow_kml("today"))
+      }
+      
+      leafletProxy("forecast_map") |>
+        clearGroup("AQI Forecast Today") |>
+        addPolygons(
+          data = airnow_today_data(),
+          fillColor = ~aqi_color,
+          fillOpacity = 0.8,
+          color = ~aqi_color,
+          weight = 1,
+          opacity = 0.8,
+          smoothFactor = 0.5,
+          popup = ~paste0("<strong>AQI Forecast Today</strong><br>", aqi_cat),
+          group = "AQI Forecast Today"
+        ) |>
+        showGroup("AQI Forecast Today")
+    } else {
+      leafletProxy("forecast_map") |>
+        hideGroup("AQI Forecast Today")
+    }
+    
+    if ("AQI Forecast Tomorrow" %in% active_groups) {
+      if (is.null(airnow_tomorrow_data())) {
+        airnow_tomorrow_data(load_airnow_kml("tomorrow"))
+      }
+      
+      leafletProxy("forecast_map") |>
+        clearGroup("AQI Forecast Tomorrow") |>
+        addPolygons(
+          data = airnow_tomorrow_data(),
+          fillColor = ~aqi_color,
+          fillOpacity = 0.8,
+          color = ~aqi_color,
+          weight = 1,
+          opacity = 0.8,
+          smoothFactor = 0.5,
+          popup = ~paste0("<strong>AQI Forecast Tomorrow</strong><br>", aqi_cat),
+          group = "AQI Forecast Tomorrow"
+        ) |>
+        showGroup("AQI Forecast Tomorrow")
+    } else {
+      leafletProxy("forecast_map") |>
+        hideGroup("AQI Forecast Tomorrow")
+    }
+  }, ignoreInit = TRUE)
   
   observeEvent(input$forecast_map_marker_click, {
     handle_burn_click(
@@ -687,6 +851,7 @@ server <- function(input, output, session) {
       req(nrow(forest_row) == 1)
       
       bb <- st_bbox(forest_row)
+      
       leafletProxy("forecast_map") |>
         clearPopups() |>
         fitBounds(
@@ -732,17 +897,13 @@ server <- function(input, output, session) {
     }
   })
   
-  observe({
+  observeEvent(input$forecast_map_bounds, {
     leafletProxy("forecast_map") |>
       showGroup("Today") |>
-      hideGroup("Yesterday")
-  })
-  
-  observe({
-    leafletProxy("forecast_map") |>
+      hideGroup("Yesterday") |>
       hideGroup("AQI Forecast Today") |>
       hideGroup("AQI Forecast Tomorrow")
-  })
+  }, once = TRUE)
   
   observeEvent(input$reset_map_click, {
     selected_burn_id(NULL)
@@ -756,9 +917,19 @@ server <- function(input, output, session) {
       )
   })
   
+  
+  # -------------------------------------------------
+  # TABLE / SELECTION OBSERVERS
+  # -------------------------------------------------
+  
   observeEvent(input$table_burn_click, {
     selected_burn_id(input$table_burn_click)
   })
+  
+  
+  # -------------------------------------------------
+  # UI OUTPUTS
+  # -------------------------------------------------
   
   output$burn_table_grouped <- renderUI({
     burns_tbl <- burns_with_forest()
@@ -809,7 +980,6 @@ server <- function(input, output, session) {
             ",
             forest_name
           ),
-          
           tags$table(
             style = "
               width:100%;
@@ -825,14 +995,8 @@ server <- function(input, output, session) {
             ),
             tags$thead(
               tags$tr(
-                tags$th(
-                  style = "text-align:left; padding:10px; border-bottom:2px solid #cccccc;",
-                  "Burn Unit"
-                ),
-                tags$th(
-                  style = "text-align:left; padding:10px; border-bottom:2px solid #cccccc; width:210px; white-space:nowrap;",
-                  "Date Issued"
-                )
+                tags$th(style = "text-align:left; padding:10px; border-bottom:2px solid #cccccc;", "Burn Unit"),
+                tags$th(style = "text-align:left; padding:10px; border-bottom:2px solid #cccccc; width:210px; white-space:nowrap;", "Date Issued")
               )
             ),
             tags$tbody(
@@ -845,26 +1009,14 @@ server <- function(input, output, session) {
                 font_weight <- if (is_selected) "700" else "600"
                 
                 tags$tr(
-                  style = paste0(
-                    "border-bottom:1px solid #e6e6e6;",
-                    "cursor:pointer;",
-                    "transition:background-color 0.15s ease;"
-                  ),
+                  style = "border-bottom:1px solid #e6e6e6;cursor:pointer;transition:background-color 0.15s ease;",
                   onclick = paste0(
                     "Shiny.setInputValue('table_burn_click','",
                     forest_df$spot_id[i],
                     "', {priority: 'event'});"
                   ),
-                  onmouseover = if (!is_selected) {
-                    "this.style.backgroundColor='#f5f5f5';"
-                  } else {
-                    ""
-                  },
-                  onmouseout = if (!is_selected) {
-                    "this.style.backgroundColor='transparent';"
-                  } else {
-                    ""
-                  },
+                  onmouseover = if (!is_selected) "this.style.backgroundColor='#f5f5f5';" else "",
+                  onmouseout = if (!is_selected) "this.style.backgroundColor='transparent';" else "",
                   tags$td(
                     style = paste0(
                       "padding:12px 10px;",
@@ -894,154 +1046,6 @@ server <- function(input, output, session) {
     )
   })
   
-  build_selected_info <- function(prompt_text) {
-    clicked_id <- selected_burn_id()
-    
-    if (is.null(clicked_id)) {
-      return(
-        div(
-          style = "
-            margin-top:20px;
-            padding:15px;
-            border:2px dashed #cccccc;
-            background:#f9f9f9;
-            text-align:center;
-            font-size:18px;
-          ",
-          prompt_text
-        )
-      )
-    }
-    
-    forecast_df <- cache_data()$forecast_df
-    sfog_tables <- cache_data()$sfog_tables
-    
-    idx <- which(forecast_df$spot_id == clicked_id)
-    
-    if (length(idx) == 0) return(NULL)
-    
-    spot_url <- forecast_df$nws_spot_url[idx]
-    project <- forecast_df$project_name[idx]
-    sfog_df <- sfog_tables[[idx]]
-    issued_display <- format_issued_datetime(forecast_df$issuanceTime[idx])
-    
-    if (is.null(sfog_df)) {
-      return(
-        HTML(paste0(
-          'Unable to screen. Please consult your <a href="',
-          spot_url,
-          '" target="_blank">spot forecast</a>.'
-        ))
-      )
-    }
-    
-    sfog_status <- sfog_df %>%
-      rowwise() %>%
-      mutate(
-        critical_count = sum(
-          c_across(c(sky_screen, temp_screen, rh_screen, wind_screen)) %in%
-            c("critical", "watch_out")
-        )
-      ) %>%
-      ungroup()
-    
-    total_max <- max(sfog_status$critical_count, na.rm = TRUE)
-    
-    if (total_max == 4) {
-      sfog_box <- div(
-        style = "border:4px solid red; background-color:#FFDADA; color:black; padding:12px; font-size:15px; margin:10px;",
-        div(
-          style = "font-weight:bold; font-size:18px; margin-bottom:6px;",
-          "PB Piedmont Required"
-        ),
-        HTML(
-          'Superfog criteria have been met. Please run a <a href="https://piedmont.dri.edu/" target="_blank">PB Piedmont model</a>.'
-        )
-      )
-    } else if (total_max == 3) {
-      sfog_box <- div(
-        style = "border:4px solid orange; background-color:#FFE8CC; color:black; padding:12px; font-size:15px; margin:10px;",
-        div(
-          style = "font-weight:bold; font-size:18px; margin-bottom:6px;",
-          "PB Piedmont Recommended"
-        ),
-        HTML(
-          'Most superfog criteria have been met. Running a <a href="https://piedmont.dri.edu/" target="_blank">PB Piedmont model</a> is recommended.'
-        )
-      )
-    } else {
-      sfog_box <- div(
-        style = "border:4px solid #777777; background-color:#D9D9D9; color:black; padding:12px; font-size:15px; margin:10px;",
-        div(
-          style = "font-weight:bold; font-size:18px; margin-bottom:6px;",
-          "PB Piedmont Not Required"
-        ),
-        "Superfog criteria have not been met."
-      )
-    }
-    
-    kbl_table <- sfog_df %>%
-      mutate(
-        SKY = cell_spec(SKY, format = "html", extra_css = sapply(sky_screen, function(v) {
-          css <- if (v == "critical") "background-color:#CA0020;color:white;font-weight:bold;text-align:center;"
-          else if (v == "watch_out") "background-color:#FFDA00;color:black;font-weight:bold;text-align:center;"
-          else "background-color:#D9D9D9;color:black;font-weight:bold;text-align:center;"
-          paste0("display:block;width:100%;height:100%;", css)
-        })),
-        TEMP = cell_spec(TEMP, format = "html", extra_css = sapply(temp_screen, function(v) {
-          css <- if (v == "critical") "background-color:#CA0020;color:white;font-weight:bold;text-align:center;"
-          else if (v == "watch_out") "background-color:#FFDA00;color:black;font-weight:bold;text-align:center;"
-          else "background-color:#D9D9D9;color:black;font-weight:bold;text-align:center;"
-          paste0("display:block;width:100%;height:100%;", css)
-        })),
-        RH = cell_spec(RH, format = "html", extra_css = sapply(rh_screen, function(v) {
-          css <- if (v == "critical") "background-color:#CA0020;color:white;font-weight:bold;text-align:center;"
-          else if (v == "watch_out") "background-color:#FFDA00;color:black;font-weight:bold;text-align:center;"
-          else "background-color:#D9D9D9;color:black;font-weight:bold;text-align:center;"
-          paste0("display:block;width:100%;height:100%;", css)
-        })),
-        WIND = cell_spec(WIND, format = "html", extra_css = sapply(wind_screen, function(v) {
-          css <- if (v == "critical") "background-color:#CA0020;color:white;font-weight:bold;text-align:center;"
-          else if (v == "watch_out") "background-color:#FFDA00;color:black;font-weight:bold;text-align:center;"
-          else "background-color:#D9D9D9;color:black;font-weight:bold;text-align:center;"
-          paste0("display:block;width:100%;height:100%;", css)
-        }))
-      ) %>%
-      select(DATETIME, TEMP, RH, WIND, SKY) %>%
-      kbl(
-        escape = FALSE,
-        align = "c",
-        col.names = c(
-          "DATE-TIME",
-          "Temperature<br>(°F)",
-          "Relative<br>Humidity (%)",
-          "Wind<br>Speed (mph)",
-          "Cloud<br>Cover (%)"
-        )
-      ) %>%
-      kable_styling(full_width = FALSE, font_size = 16)
-    
-    tagList(
-      h3(style = "font-weight:bold; font-size:24px;", project),
-      div(
-        style = "margin-bottom:6px; font-size:16px;",
-        a("Full Spot Weather Forecast", href = spot_url, target = "_blank")
-      ),
-      div(
-        style = "margin-bottom:10px; font-size:16px; color:#555;",
-        paste0("Date Issued: ", issued_display)
-      ),
-      sfog_box,
-      HTML(as.character(kbl_table)),
-      div(
-        style = "text-align:center; font-size:18px; margin-top:8px;",
-        span(style = "background-color:#CA0020;color:white;padding:8px 12px;margin-right:6px;font-weight:bold;", "Critical"),
-        span(style = "background-color:#FFDA00;color:black;padding:8px 12px;margin-right:6px;font-weight:bold;", "Watch Out"),
-        span(style = "background-color:#D9D9D9;color:black;padding:8px 12px;margin-right:6px;font-weight:bold;", "Minimal Concern")
-      )
-    )
-  }
-  
   output$selected_info_map <- renderUI({
     df <- cache_data()$forecast_df
     
@@ -1061,7 +1065,6 @@ server <- function(input, output, session) {
     build_selected_info(prompt_text)
   })
   
-  
   output$selected_info_table <- renderUI({
     df <- cache_data()$forecast_df
     
@@ -1077,25 +1080,6 @@ server <- function(input, output, session) {
     }
     
     build_selected_info(prompt_text)
-  })
-  
-  # Superfog Risk
-  output$sfog_map <- renderLeaflet({
-    
-    leaflet() |>
-      addTiles() |>
-      setView(
-        lng = -88.11,
-        lat = 34.95,
-        zoom = 5
-      ) |>
-      addPolygons(
-        data = r8,
-        fill = FALSE,
-        color = "#000000",
-        weight = 2,
-        opacity = 1
-      )
   })
 }
 
