@@ -21,7 +21,7 @@ IS_DEV <- identical(APP_MODE, "dev")
 source("R/cache_helpers.R")
 source("R/map_helpers.R")
 source("R/ui_helpers.R")
-
+source("R/airnow_helpers.R")
 
 # STATIC DATA AND CACHE----------------------------------------------
 
@@ -40,31 +40,7 @@ cache_url <- "https://raw.githubusercontent.com/jeremyash/spot_screen/cache-data
 
 
 
-# -------------------------------------------------
-# AIRNOW AQI FORECAST DATA
-# -------------------------------------------------
-
-namedColors <- US_AQI$colors_EPA
-names(namedColors) <- c(
-  US_AQI$names_eng[1:2],
-  "Unhealthy for Sensitive Groups",
-  US_AQI$names_eng[4:6]
-)
-
-extract_aqi_cat <- function(x) {
-  vapply(
-    x,
-    function(txt) {
-      tryCatch(
-        {
-          html_text(html_elements(read_html(txt), "i"))[1]
-        },
-        error = function(e) NA_character_
-      )
-    },
-    FUN.VALUE = character(1)
-  )
-}
+# AIRNOW AQI POLYGONS} ----------------------------------------------
 
 airnow_today <- NULL
 
@@ -154,34 +130,7 @@ initial_cache <- tryCatch(
   }
 )
 
-sfog_legend_box <- function(label, border, bg, text) {
-  div(
-    style = "
-      display:grid;
-      grid-template-columns:260px 1fr;
-      align-items:center;
-      column-gap:18px;
-      margin-bottom:10px;
-    ",
-    
-    div(
-      style = paste0(
-        "border:4px solid ", border, ";",
-        "background-color:", bg, ";",
-        "padding:8px 14px;",
-        "font-weight:bold;",
-        "text-align:center;",
-        "border-radius:4px;"
-      ),
-      label
-    ),
-    
-    div(
-      style = "font-size:16px; text-align:left;",
-      text
-    )
-  )
-}
+
 
 # -------------------------------------------------
 # UI
@@ -647,21 +596,11 @@ server <- function(input, output, session) {
     m
   })
   
-  handle_burn_click <- function(click) {
-    req(click$id)
-    
-    selected_burn_id(click$id)
-    
-    leafletProxy("forecast_map") |>
-      setView(
-        lng = click$lng,
-        lat = click$lat,
-        zoom = 8
-      )
-  }
-  
   observeEvent(input$forecast_map_marker_click, {
-    handle_burn_click(input$forecast_map_marker_click)
+    handle_burn_click(
+      input$forecast_map_marker_click,
+      selected_burn_id
+    )
   })
   
   observeEvent(input$forecast_map_shape_click, {
