@@ -1,12 +1,10 @@
-#AQI Colors
-namedColors <- US_AQI$colors_EPA
+namedColors <- AirMonitor::US_AQI$colors_EPA
 
 names(namedColors) <- c(
-  US_AQI$names_eng[1:2],
+  AirMonitor::US_AQI$names_eng[1:2],
   "Unhealthy for Sensitive Groups",
-  US_AQI$names_eng[4:6]
+  AirMonitor::US_AQI$names_eng[4:6]
 )
-
 
 extract_aqi_cat <- function(x) {
   vapply(
