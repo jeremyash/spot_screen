@@ -137,21 +137,85 @@ initial_cache <- tryCatch(
 
 ui <- fluidPage(
   
+  # HEAD / BROWSER ASSETS ----
+  
   tags$head(
-    # SVG (PRIMARY)
-    tags$link(rel = "icon", type = "image/svg+xml", href = "favicon_v2.svg"),
     
-    # PNG fallback (helps Chrome before ICO sometimes)
+    # Favicons ----
+    
+    tags$link(rel = "icon", type = "image/svg+xml", href = "favicon_v2.svg"),
     tags$link(rel = "icon", type = "image/png", sizes = "32x32", href = "favicon-32_v2.png"),
     tags$link(rel = "icon", type = "image/png", sizes = "16x16", href = "favicon-16_v2.png"),
-    
-    # ICO fallback (last resort)
     tags$link(rel = "icon", type = "image/x-icon", href = "favicon_v2.ico"),
     tags$link(rel = "shortcut icon", href = "favicon_v2.ico"),
+    tags$link(rel = "mask-icon", href = "safari-pinned_v2.svg", color = "#3A3640"),
     
-    # Safari pinned tab
-    tags$link(rel = "mask-icon", href = "safari-pinned_v2.svg", color = "#3A3640")
-  ), 
+    # Superfog PNG overlay JavaScript ----
+    
+    tags$script(HTML("
+        Shiny.addCustomMessageHandler('sfog_set_overlay', function(data) {
+        
+          var widgets = HTMLWidgets.findAll('.leaflet');
+          if (!widgets.length) return;
+        
+          var map = null;
+        
+          for (var i = 0; i < widgets.length; i++) {
+            if (widgets[i].getMap) {
+        
+              var candidate = widgets[i].getMap();
+        
+              if (candidate._container.id === 'sfog_map') {
+                map = candidate;
+                break;
+              }
+            }
+          }
+        
+          if (!map) return;
+        
+          if (window.sfogRiskOverlay && map.hasLayer(window.sfogRiskOverlay)) {
+            map.removeLayer(window.sfogRiskOverlay);
+          }
+        
+          var bounds = [
+            [data.south, data.west],
+            [data.north, data.east]
+          ];
+        
+          window.sfogRiskOverlay = L.imageOverlay(data.url, bounds, {
+            opacity: 0.7,
+            className: 'sfog-png-overlay'
+          }).addTo(map);
+        });
+        ")),
+            
+            
+    # Superfog PNG overlay CSS ----
+            
+    tags$style(HTML("
+        .sfog-png-overlay {
+          image-rendering: pixelated;
+          image-rendering: crisp-edges;
+          -ms-interpolation-mode: nearest-neighbor;
+        }
+        ")),
+    
+    # Spot map controls JavaScript ----
+    
+    tags$script(HTML("
+      $(document).on('click', '#reset_map', function () {
+        Shiny.setInputValue('reset_map_click', Math.random());
+      });
+
+      $(document).on('change', 'input[name=\"date_layer_choice\"]', function () {
+        Shiny.setInputValue('map_layer_choice', $(this).val(), {priority: 'event'});
+      });
+    "))
+  ),
+  
+  
+  # TITLE ----
   
   titlePanel(
     if (IS_DEV) {
@@ -161,18 +225,14 @@ ui <- fluidPage(
     }
   ),
   
-   tags$script(HTML("
-    $(document).on('click', '#reset_map', function () {
-      Shiny.setInputValue('reset_map_click', Math.random());
-    });
-
-    $(document).on('change', 'input[name=\"date_layer_choice\"]', function () {
-      Shiny.setInputValue('map_layer_choice', $(this).val(), {priority: 'event'});
-    });
-  ")),
+  
+  # MAIN TABS ----
   
   tabsetPanel(
     id = "main_tabs",
+    
+    
+    # MAP TAB ----
     
     tabPanel(
       "Map",
@@ -209,6 +269,9 @@ ui <- fluidPage(
       )
     ),
     
+    
+    # TABLE TAB ----
+    
     tabPanel(
       "Table",
       fluidRow(
@@ -242,11 +305,12 @@ ui <- fluidPage(
       )
     ),
     
+    
+    # SUPERFOG RISK TAB ----
+    
     tabPanel(
       "Superfog Risk",
-      
       fluidRow(
-        
         column(
           9,
           div(
@@ -254,36 +318,27 @@ ui <- fluidPage(
             leafletOutput("sfog_map", height = "100%")
           )
         ),
-        
         column(
           3,
-          
           div(
             style = "
-          padding:15px;
-          border-left:1px solid #d9d9d9;
-          height:700px;
-          overflow-y:auto;
-        ",
-            
+              padding:15px;
+              border-left:1px solid #d9d9d9;
+              height:700px;
+              overflow-y:auto;
+            ",
             h3("Superfog Risk"),
-            
-            p(
-              "Experimental development version of the NDFD superfog visualization."
-            ),
-            
-            p(
-              "Layers are loaded dynamically to improve performance."
-            ),
-            
+            p("Experimental development version of the NDFD superfog visualization."),
+            p("Layers are loaded dynamically to improve performance."),
             uiOutput("sfog_time_selector"),
-            
             verbatimTextOutput("sfog_status")
-            
           )
         )
       )
-    ), 
+    ),
+    
+    
+    # ABOUT TAB ----
     
     tabPanel(
       "About",
@@ -292,17 +347,13 @@ ui <- fluidPage(
         
         h2("About This Tool"),
         
-        p(
-          "This tool filters the available NWS Spot Weather forecasts to those occurring on US Forest Service Region 8 National Forest System units."
-        ),
+        p("This tool filters the available NWS Spot Weather forecasts to those occurring on US Forest Service Region 8 National Forest System units."),
         
         p(
           HTML('Using the <a href="https://usdagcc.sharepoint.com/sites/fs-r08-sm/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Ffs%2Dr08%2Dsm%2FShared%20Documents%2FGeneral%2FGuidance%20and%20Forms%2FR8%20Smoke%20Management%20Guidelines%20%28March%202022%29%2Epdf&parent=%2Fsites%2Ffs%2Dr08%2Dsm%2FShared%20Documents%2FGeneral%2FGuidance%20and%20Forms&p=true&ga=1" target="_blank">R8 Smoke Management Guidelines</a>, each spot forecast is screened to identify weather conditions that may increase the likelihood of <strong>superfog formation</strong>. When these conditions occur, it is necessary to run a nighttime smoke dispersion model using <a href="https://piedmont.dri.edu/" target="_blank">PB Piedmont</a>.')
         ),
         
-        p(
-          "The screening focuses on overnight and early morning forecast hours and evaluates four key variables:"
-        ),
+        p("The screening focuses on overnight and early morning forecast hours and evaluates four key variables:"),
         
         br(),
         
@@ -365,28 +416,10 @@ ui <- fluidPage(
             background:#ffffff;
             box-shadow:0 0 8px rgba(0,0,0,0.08);
           ",
-          h3(
-            style = "margin-top:0; margin-bottom:15px;",
-            "PB Piedmont Decision Guide"
-          ),
-          sfog_legend_box(
-            "PB Piedmont Required",
-            "red",
-            "#FFDADA",
-            "All variables in Critical or Watch Out"
-          ),
-          sfog_legend_box(
-            "PB Piedmont Recommended",
-            "orange",
-            "#FFE8CC",
-            "3 of 4 variables in Critical or Watch Out"
-          ),
-          sfog_legend_box(
-            "PB Piedmont Not Required",
-            "#777777",
-            "#D9D9D9",
-            "<3 variables in Critical or Watch Out"
-          )
+          h3(style = "margin-top:0; margin-bottom:15px;", "PB Piedmont Decision Guide"),
+          sfog_legend_box("PB Piedmont Required", "red", "#FFDADA", "All variables in Critical or Watch Out"),
+          sfog_legend_box("PB Piedmont Recommended", "orange", "#FFE8CC", "3 of 4 variables in Critical or Watch Out"),
+          sfog_legend_box("PB Piedmont Not Required", "#777777", "#D9D9D9", "<3 variables in Critical or Watch Out")
         ),
         
         br(),
@@ -408,6 +441,7 @@ ui <- fluidPage(
     )
   )
 )
+
 
 # SERVER ----------------------------------------------
 
@@ -494,15 +528,6 @@ server <- function(input, output, session) {
       mutate(forest = if_else(is.na(forest), "Not matched", forest))
   })
   
-  selected_sfog_raster <- reactive({
-    
-    req(sfog_loaded())
-    req(input$sfog_time_index)
-    
-    x <- sfog_cache()
-    
-    x$sfog_ll[[as.numeric(input$sfog_time_index)]]
-  })
   
   
   # HELPER FUNCTIONS INSIDE SERVER --------------------------------------
@@ -632,6 +657,29 @@ server <- function(input, output, session) {
         span(style = "background-color:#CA0020;color:white;padding:8px 12px;margin-right:6px;font-weight:bold;", "Critical"),
         span(style = "background-color:#FFDA00;color:black;padding:8px 12px;margin-right:6px;font-weight:bold;", "Watch Out"),
         span(style = "background-color:#D9D9D9;color:black;padding:8px 12px;margin-right:6px;font-weight:bold;", "Minimal Concern")
+      )
+    )
+  }
+  
+  set_sfog_overlay <- function(hour_index) {
+    req(sfog_loaded())
+    
+    x <- sfog_cache()
+    hour_index <- as.numeric(hour_index)
+    
+    req(!is.null(x$sfog_png_urls))
+    req(!is.null(x$sfog_png_bounds))
+    req(hour_index >= 1)
+    req(hour_index <= length(x$sfog_png_urls))
+    
+    session$sendCustomMessage(
+      type = "sfog_set_overlay",
+      message = list(
+        url = x$sfog_png_urls[[hour_index]],
+        west = x$sfog_png_bounds$west,
+        south = x$sfog_png_bounds$south,
+        east = x$sfog_png_bounds$east,
+        north = x$sfog_png_bounds$north
       )
     )
   }
@@ -935,21 +983,22 @@ server <- function(input, output, session) {
       )
   })
   
-  observe({
+  observeEvent(input$sfog_time_index, {
+    req(sfog_loaded())
+    req(input$sfog_time_index)
     
+    set_sfog_overlay(input$sfog_time_index)
+  }, ignoreInit = TRUE)
+  
+  observeEvent(input$sfog_map_bounds, {
     req(sfog_loaded())
     
-    r <- selected_sfog_raster()
+    selected_hour <- input$sfog_time_index
+    if (is.null(selected_hour)) selected_hour <- 1
     
-    leafletProxy("sfog_map") |>
-      clearImages() |>
-      addRasterImage(
-        r,
-        opacity = 0.7,
-        project = TRUE
-      )
-  })
-
+    set_sfog_overlay(selected_hour)
+  }, ignoreInit = FALSE)
+  
   
   # TABLE / SELECTION OBSERVERS -----------------------------------------
   
