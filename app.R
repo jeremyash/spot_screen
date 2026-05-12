@@ -314,9 +314,32 @@ ui <- fluidPage(
         column(
           9,
           
-          leafletOutput(
-            "sfog_map",
-            height = "520px"
+          div(
+            style = "position:relative;",
+            
+            actionButton(
+              "sfog_reset_map_view",
+              "Reset Map View",
+              style = "
+                position:absolute;
+                top:10px;
+                right:10px;
+                z-index:1000;
+                background:white;
+                border:2px solid rgba(0,0,0,0.2);
+                border-radius:4px;
+                padding:6px 10px;
+                font-size:13px;
+                font-weight:600;
+                cursor:pointer;
+                box-shadow:0 1px 4px rgba(0,0,0,0.3);
+              "
+            ),
+            
+            leafletOutput(
+              "sfog_map",
+              height = "520px"
+            )
           ),
           
           div(
@@ -658,7 +681,7 @@ server <- function(input, output, session) {
         lng = lon,
         lat = lat,
         group = "Point Query",
-        radius = 10,
+        radius = 7,
         stroke = TRUE,
         weight = 2,
         color = "white",
@@ -670,6 +693,12 @@ server <- function(input, output, session) {
           ", ",
           round(lon, 4)
         )
+      ) |>
+      fitBounds(
+        lng1 = lon - 0.5,
+        lat1 = lat - 0.5,
+        lng2 = lon + 0.5,
+        lat2 = lat + 0.5
       )
     
     valid_times <- as.POSIXct(
@@ -1236,6 +1265,32 @@ server <- function(input, output, session) {
     )
   })
   
+  observeEvent(input$sfog_reset_map_view, {
+    
+    selected_sfog_point(NULL)
+    
+    updateTextInput(
+      session,
+      "sfog_query_lat",
+      value = ""
+    )
+    
+    updateTextInput(
+      session,
+      "sfog_query_lon",
+      value = ""
+    )
+    
+    leafletProxy("sfog_map") |>
+      clearGroup("Point Query") |>
+      fitBounds(
+        lng1 = -96,
+        lat1 = 24,
+        lng2 = -74,
+        lat2 = 38
+      )
+  })
+  
   # TABLE / SELECTION OBSERVERS -----------------------------------------
   
   observeEvent(input$table_burn_click, {
@@ -1464,6 +1519,8 @@ server <- function(input, output, session) {
   })
   
   output$sfog_point_risk_plot <- renderPlot({
+    
+    req(selected_sfog_point())
     
     df <- sfog_point_risk()
     
