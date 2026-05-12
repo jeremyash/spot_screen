@@ -30,8 +30,7 @@ source("R/selected_info_helpers.R")
 
 wfo <- read_csv("r8_wfo.csv", show_col_types = FALSE)
 
-r8_forests <- st_read("r8_forests", quiet = TRUE) |>
-  st_transform(4326)
+r8_forests <- readRDS("r8_forests_simplified.rds")
 
 r8 <- st_read("region_8", quiet = TRUE) |>
   st_transform(4326)
@@ -39,6 +38,7 @@ r8 <- st_read("region_8", quiet = TRUE) |>
 r8_forests$forest_id <- seq_len(nrow(r8_forests))
 
 cache_url <- "https://raw.githubusercontent.com/jeremyash/spot_screen/cache-data/cache/superfog_cache.rds"
+
 sfog_cache_url <- "https://raw.githubusercontent.com/jeremyash/sfog_vis/cache-data/cache/ndfd_superfog_cache.rds"
 
 
@@ -900,6 +900,17 @@ server <- function(input, output, session) {
         color = "#000000",
         weight = 2,
         opacity = 1
+      ) |>
+      addPolygons(
+        data = r8_forests,
+        color = "darkgreen",
+        weight = 1,
+        opacity = 0.8,
+        fillColor = "darkgreen",
+        fillOpacity = 0.12,
+        smoothFactor = 0.8,
+        group = "Region 8 Forests",
+        options = pathOptions(clickable = FALSE)
       ) |>
       addControl(
         html = sfog_risk_legend,
