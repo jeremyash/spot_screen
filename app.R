@@ -1,4 +1,5 @@
-# app.R
+# PACKAGES ----------------------------------------------
+
 library(shiny)
 library(leaflet)
 library(tidyverse)
@@ -10,6 +11,17 @@ library(jsonlite)
 library(rvest)
 library(xml2)
 library(AirMonitor)
+
+APP_MODE <- Sys.getenv("APP_MODE", unset = "dev")
+IS_DEV <- identical(APP_MODE, "dev")
+
+
+# SOURCE HELPER FUNCTIONS ----------------------------------------------
+
+source("R/cache_helpers.R")
+source("R/map_helpers.R")
+source("R/ui_helpers.R")
+
 
 # -------------------------------------------------
 # STATIC DATA
@@ -27,21 +39,6 @@ r8_forests$forest_id <- seq_len(nrow(r8_forests))
 
 cache_url <- "https://raw.githubusercontent.com/jeremyash/spot_screen/cache-data/cache/superfog_cache.rds"
 
-download_remote_cache <- function(url) {
-  tf <- tempfile(fileext = ".rds")
-  
-  resp <- request(url) |>
-    req_perform()
-  
-  writeBin(resp_body_raw(resp), tf)
-  x <- readRDS(tf)
-  
-  if (!all(c("forecast_df", "sfog_tables", "last_refresh") %in% names(x))) {
-    stop("Remote cache is missing one or more required objects: forecast_df, sfog_tables, last_refresh")
-  }
-  
-  x
-}
 
 offset_duplicate_points <- function(df, jitter_amount = 0.12) {
   if (nrow(df) == 0) return(df)
