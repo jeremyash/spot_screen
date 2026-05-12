@@ -33,3 +33,17 @@ offset_duplicate_points <- function(df, jitter_amount = 0.12) {
     ) %>%
     select(-issued_rank, -dup_n, -dup_id, -same_coord_today_yesterday)
 }
+
+
+handle_burn_click <- function(click, selected_burn_id) {
+  shiny::req(click$id)
+  
+  selected_burn_id(click$id)
+  
+  leaflet::leafletProxy("forecast_map") |>
+    leaflet::setView(
+      lng = click$lng,
+      lat = click$lat,
+      zoom = 8
+    )
+}
