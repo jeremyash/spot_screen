@@ -391,69 +391,63 @@ server <- function(input, output, session) {
   airnow_today_data <- reactiveVal(NULL)
   airnow_tomorrow_data <- reactiveVal(NULL)
   
-  observe({
+  observeEvent(input$forecast_map_groups, {
+    active_groups <- input$forecast_map_groups
     
-    map_ready <- input$forecast_map_bounds
-    
-    req(map_ready)
-    
-    if (is.null(airnow_today_data())) {
+    # AQI Today
+    if ("AQI Forecast Today" %in% active_groups) {
       
-      try({
-        
-        sf_airnow_today <- sf::st_read(
-          "https://s3-us-west-1.amazonaws.com/files.airnowtech.org/airnow/today/forecast_today_usa.kml",
-          quiet = TRUE
+      if (is.null(airnow_today_data())) {
+        airnow_today_data(load_airnow_kml("today"))
+      }
+      
+      leafletProxy("forecast_map") |>
+        clearGroup("AQI Forecast Today") |>
+        addPolygons(
+          data = airnow_today_data(),
+          fillColor = ~aqi_color,
+          fillOpacity = 0.8,
+          color = ~aqi_color,
+          weight = 1,
+          opacity = 0.8,
+          smoothFactor = 0.5,
+          popup = ~paste0("<strong>AQI Forecast Today</strong><br>", aqi_cat),
+          group = "AQI Forecast Today"
         ) |>
-          sf::st_zm()
-        
-        desc_col <- if ("description" %in% names(sf_airnow_today)) {
-          "description"
-        } else {
-          "Description"
-        }
-        
-        sf_airnow_today <- sf_airnow_today |>
-          mutate(
-            aqi_cat = extract_aqi_cat(.data[[desc_col]]),
-            aqi_color = unname(namedColors[aqi_cat])
-          ) |>
-          filter(aqi_cat != "Good")
-        
-        airnow_today_data(sf_airnow_today)
-        
-      }, silent = TRUE)
+        showGroup("AQI Forecast Today")
+      
+    } else {
+      leafletProxy("forecast_map") |>
+        hideGroup("AQI Forecast Today")
     }
     
-    if (is.null(airnow_tomorrow_data())) {
+    # AQI Tomorrow
+    if ("AQI Forecast Tomorrow" %in% active_groups) {
       
-      try({
-        
-        sf_airnow_tomorrow <- sf::st_read(
-          "https://s3-us-west-1.amazonaws.com/files.airnowtech.org/airnow/today/forecast_tomorrow_usa.kml",
-          quiet = TRUE
+      if (is.null(airnow_tomorrow_data())) {
+        airnow_tomorrow_data(load_airnow_kml("tomorrow"))
+      }
+      
+      leafletProxy("forecast_map") |>
+        clearGroup("AQI Forecast Tomorrow") |>
+        addPolygons(
+          data = airnow_tomorrow_data(),
+          fillColor = ~aqi_color,
+          fillOpacity = 0.8,
+          color = ~aqi_color,
+          weight = 1,
+          opacity = 0.8,
+          smoothFactor = 0.5,
+          popup = ~paste0("<strong>AQI Forecast Tomorrow</strong><br>", aqi_cat),
+          group = "AQI Forecast Tomorrow"
         ) |>
-          sf::st_zm()
-        
-        desc_col <- if ("description" %in% names(sf_airnow_tomorrow)) {
-          "description"
-        } else {
-          "Description"
-        }
-        
-        sf_airnow_tomorrow <- sf_airnow_tomorrow |>
-          mutate(
-            aqi_cat = extract_aqi_cat(.data[[desc_col]]),
-            aqi_color = unname(namedColors[aqi_cat])
-          ) |>
-          filter(aqi_cat != "Good")
-        
-        airnow_tomorrow_data(sf_airnow_tomorrow)
-        
-      }, silent = TRUE)
+        showGroup("AQI Forecast Tomorrow")
+      
+    } else {
+      leafletProxy("forecast_map") |>
+        hideGroup("AQI Forecast Tomorrow")
     }
-  })
-  
+  }, ignoreInit = TRUE)
   
   # set up burn id parameter
   selected_burn_id <- reactiveVal(NULL)
@@ -548,39 +542,6 @@ server <- function(input, output, session) {
         smoothFactor = 0.5,
         options = pathOptions(clickable = TRUE)
       )
-    
-    airnow_today <- airnow_today_data()
-    airnow_tomorrow <- airnow_tomorrow_data()
-    
-    if (!is.null(airnow_today) && nrow(airnow_today) > 0) {
-      m <- m |>
-        addPolygons(
-          data = airnow_today,
-          fillColor = ~aqi_color,
-          fillOpacity = 0.8,
-          color = ~aqi_color,
-          weight = 1,
-          opacity = 0.8,
-          smoothFactor = 0.5,
-          popup = ~paste0("<strong>AQI Forecast Today</strong><br>", aqi_cat),
-          group = "AQI Forecast Today"
-        )
-    }
-    
-    if (!is.null(airnow_tomorrow) && nrow(airnow_tomorrow) > 0) {
-      m <- m |>
-        addPolygons(
-          data = airnow_tomorrow,
-          fillColor = ~aqi_color,
-          fillOpacity = 0.8,
-          color = ~aqi_color,
-          weight = 1,
-          opacity = 0.8,
-          smoothFactor = 0.5,
-          popup = ~paste0("<strong>AQI Forecast Tomorrow</strong><br>", aqi_cat),
-          group = "AQI Forecast Tomorrow"
-        )
-    }
     
     if (nrow(df_map) > 0 && all(c("lon", "lat") %in% names(df_map))) {
       df_today <- df_map %>% filter(issued == "Today")
