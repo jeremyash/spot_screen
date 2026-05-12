@@ -313,9 +313,17 @@ ui <- fluidPage(
       fluidRow(
         column(
           9,
+          
           div(
             style = "height:700px;",
-            leafletOutput("sfog_map", height = "100%")
+            leafletOutput("sfog_map", height = "70%")
+          ),
+          
+          br(),
+          
+          plotOutput(
+            "sfog_point_risk_plot",
+            height = "250px"
           )
         ),
         column(
@@ -371,7 +379,32 @@ ui <- fluidPage(
             br(),
             
             uiOutput("sfog_time_slider"),
-            verbatimTextOutput("sfog_status")
+            verbatimTextOutput("sfog_status"),
+            hr(),
+            
+            h4("Point Risk Time Series"),
+            
+            p("Enter a latitude/longitude or click the map."),
+            
+            textInput(
+              "sfog_query_lat",
+              "Latitude",
+              value = "",
+              placeholder = "e.g. 35.5951"
+            ),
+            
+            textInput(
+              "sfog_query_lon",
+              "Longitude",
+              value = "",
+              placeholder = "e.g. -82.5515"
+            ),
+            
+            actionButton(
+              "sfog_extract_point",
+              "Plot Point Risk",
+              width = "100%"
+            )
           )
         )
       )
@@ -500,7 +533,7 @@ server <- function(input, output, session) {
   
   selected_burn_id <- reactiveVal(NULL)
   
-  
+  selected_sfog_point <- reactiveVal(NULL)
   
   # CACHE LOADING OBSERVERS ---------------------------------------------
   
@@ -568,6 +601,87 @@ server <- function(input, output, session) {
       mutate(forest = if_else(is.na(forest), "Not matched", forest))
   })
   
+  sfog_point_risk <- reactive({
+    
+    req(sfog_loaded())
+    
+    pt_info <- selected_sfog_point()
+    
+    req(pt_info)
+    
+    lat <- pt_info$lat
+    lon <- pt_info$lon
+    
+    validate(
+      need(!is.na(lat), "Please enter a valid latitude."),
+      need(!is.na(lon), "Please enter a valid longitude.")
+    )
+    
+    x <- sfog_cache()
+    
+    pt <- data.frame(
+      lon = lon,
+      lat = lat
+    )
+    
+    pt_v <- terra::vect(
+      pt,
+      geom = c("lon", "lat"),
+      crs = "EPSG:4326"
+    )
+    
+    inside_domain <- !is.na(
+      terra::extract(
+        x$sfog_ll[[1]],
+        pt_v
+      )[1, 2]
+    )
+    
+    validate(
+      need(
+        inside_domain,
+        "Location is outside of the Southern Area."
+      )
+    )
+    
+    vals <- terra::extract(
+      x$sfog_ll,
+      pt_v
+    )
+    
+    risk_vals <- as.numeric(vals[1, -1])
+    
+    leafletProxy("sfog_map") |>
+      clearGroup("Point Query") |>
+      addMarkers(
+        lng = lon,
+        lat = lat,
+        group = "Point Query",
+        label = paste0(
+          "Point Query: ",
+          round(lat, 4),
+          ", ",
+          round(lon, 4)
+        )
+      )
+    
+    valid_times <- as.POSIXct(
+      x$valid_times,
+      origin = "1970-01-01",
+      tz = "UTC"
+    )
+    
+    data.frame(
+      time_utc = valid_times,
+      time_et = lubridate::with_tz(
+        valid_times,
+        "America/New_York"
+      ),
+      risk = risk_vals,
+      lat = lat,
+      lon = lon
+    )
+  })
   
   
   # HELPER FUNCTIONS INSIDE SERVER --------------------------------------
@@ -1072,6 +1186,46 @@ server <- function(input, output, session) {
       session,
       "sfog_hour",
       value = min(length(x$valid_times), input$sfog_hour + 1)
+    )
+  })
+  
+  observeEvent(input$sfog_map_click, {
+    
+    lat <- input$sfog_map_click$lat
+    lon <- input$sfog_map_click$lng
+    
+    updateTextInput(
+      session,
+      "sfog_query_lat",
+      value = round(lat, 5)
+    )
+    
+    updateTextInput(
+      session,
+      "sfog_query_lon",
+      value = round(lon, 5)
+    )
+    
+    selected_sfog_point(
+      list(
+        lat = lat,
+        lon = lon,
+        source = "map"
+      )
+    )
+  })
+  
+  observeEvent(input$sfog_extract_point, {
+    
+    lat <- as.numeric(input$sfog_query_lat)
+    lon <- as.numeric(input$sfog_query_lon)
+    
+    selected_sfog_point(
+      list(
+        lat = lat,
+        lon = lon,
+        source = "manual"
+      )
     )
   })
   
