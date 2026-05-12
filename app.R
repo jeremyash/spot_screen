@@ -330,7 +330,47 @@ ui <- fluidPage(
             h3("Superfog Risk"),
             p("Experimental development version of the NDFD superfog visualization."),
             p("Layers are loaded dynamically to improve performance."),
-            uiOutput("sfog_time_selector"),
+            fluidRow(
+              column(
+                width = 2,
+                actionButton(
+                  "sfog_prev_hour",
+                  label = NULL,
+                  icon = icon("chevron-left"),
+                  width = "100%"
+                )
+              ),
+              
+              column(
+                width = 8,
+                div(
+                  style = "
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        height:38px;
+        font-weight:bold;
+        font-size:18px;
+        text-align:center;
+      ",
+                  textOutput("sfog_valid_time")
+                )
+              ),
+              
+              column(
+                width = 2,
+                actionButton(
+                  "sfog_next_hour",
+                  label = NULL,
+                  icon = icon("chevron-right"),
+                  width = "100%"
+                )
+              )
+            ),
+            
+            br(),
+            
+            uiOutput("sfog_time_slider"),
             verbatimTextOutput("sfog_status")
           )
         )
@@ -993,22 +1033,47 @@ server <- function(input, output, session) {
       )
   })
   
-  observeEvent(input$sfog_time_index, {
-    req(sfog_loaded())
-    req(input$sfog_time_index)
+  observeEvent(input$sfog_hour, {
     
-    set_sfog_overlay(input$sfog_time_index)
+    req(sfog_loaded())
+    req(input$sfog_hour)
+    
+    set_sfog_overlay(input$sfog_hour)
+    
   }, ignoreInit = TRUE)
   
   observeEvent(input$sfog_map_bounds, {
     req(sfog_loaded())
     
-    selected_hour <- input$sfog_time_index
+    selected_hour <- input$sfog_hour
     if (is.null(selected_hour)) selected_hour <- 1
     
     set_sfog_overlay(selected_hour)
   }, ignoreInit = FALSE)
   
+  observeEvent(input$sfog_prev_hour, {
+    
+    req(input$sfog_hour)
+    
+    updateSliderInput(
+      session,
+      "sfog_hour",
+      value = max(1, input$sfog_hour - 1)
+    )
+  })
+  
+  observeEvent(input$sfog_next_hour, {
+    
+    req(input$sfog_hour)
+    
+    x <- sfog_cache()
+    
+    updateSliderInput(
+      session,
+      "sfog_hour",
+      value = min(length(x$valid_times), input$sfog_hour + 1)
+    )
+  })
   
   # TABLE / SELECTION OBSERVERS -----------------------------------------
   
@@ -1189,25 +1254,51 @@ server <- function(input, output, session) {
     )
   })
   
-  output$sfog_time_selector <- renderUI({
+  output$sfog_time_slider <- renderUI({
     
-    if (!sfog_loaded()) {
-      return(NULL)
-    }
+    req(sfog_loaded())
     
     x <- sfog_cache()
     
-    selectInput(
-      inputId = "sfog_time_index",
-      label = "Forecast Time",
-      choices = setNames(
-        seq_along(x$valid_times),
-        format(
-          lubridate::with_tz(x$valid_times, "America/New_York"),
-          "%Y-%m-%d %H:%M %Z"
-        )
+    valid_times <- as.POSIXct(
+      x$valid_times,
+      origin = "1970-01-01",
+      tz = "UTC"
+    )
+    
+    sliderInput(
+      inputId = "sfog_hour",
+      label = NULL,
+      min = 1,
+      max = length(valid_times),
+      value = 1,
+      step = 1,
+      animate = animationOptions(
+        interval = 900,
+        loop = TRUE
+      )
+    )
+  })
+  
+  output$sfog_valid_time <- renderText({
+    
+    req(sfog_loaded())
+    req(input$sfog_hour)
+    
+    x <- sfog_cache()
+    
+    valid_times <- as.POSIXct(
+      x$valid_times,
+      origin = "1970-01-01",
+      tz = "UTC"
+    )
+    
+    format(
+      lubridate::with_tz(
+        valid_times[input$sfog_hour],
+        "America/New_York"
       ),
-      selected = 1
+      "%b %d, %Y %I:%M %p %Z"
     )
   })
   
