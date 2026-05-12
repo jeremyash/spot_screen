@@ -702,11 +702,7 @@ server <- function(input, output, session) {
         lat2 = lat + 0.5
       )
     
-    valid_times <- as.POSIXct(
-      x$valid_times,
-      origin = "1970-01-01",
-      tz = "UTC"
-    )
+    valid_times <- get_sfog_valid_times(x)
     
     data.frame(
       time_utc = valid_times,
@@ -721,8 +717,7 @@ server <- function(input, output, session) {
   })
   
   
-  # HELPER FUNCTIONS INSIDE SERVER --------------------------------------
-  
+  # HELPER FUNCTIONS INSIDE SERVER ----
   set_sfog_overlay <- function(hour_index) {
     req(sfog_loaded())
     
@@ -745,7 +740,6 @@ server <- function(input, output, session) {
       )
     )
   }
-  
   
   # TEXT OUTPUTS --------------------------------------------------------
   
@@ -1356,11 +1350,7 @@ server <- function(input, output, session) {
     
     x <- sfog_cache()
     
-    valid_times <- as.POSIXct(
-      x$valid_times,
-      origin = "1970-01-01",
-      tz = "UTC"
-    )
+    valid_times <- get_sfog_valid_times(x)
     
     sliderInput(
       inputId = "sfog_hour",
@@ -1383,18 +1373,10 @@ server <- function(input, output, session) {
     
     x <- sfog_cache()
     
-    valid_times <- as.POSIXct(
-      x$valid_times,
-      origin = "1970-01-01",
-      tz = "UTC"
-    )
+    valid_times <- get_sfog_valid_times(x)
     
-    format(
-      lubridate::with_tz(
-        valid_times[input$sfog_hour],
-        "America/New_York"
-      ),
-      "%b %d, %Y %I:%M %p %Z"
+    format_sfog_valid_time(
+      valid_times[input$sfog_hour]
     )
   })
   

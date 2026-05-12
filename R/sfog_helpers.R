@@ -36,3 +36,22 @@ download_sfog_cache <- function(url) {
   
   obj
 }
+
+get_sfog_valid_times <- function(sfog_cache_obj) {
+  
+  valid_times <- sfog_cache_obj$valid_times
+  
+  as.POSIXct(
+    valid_times,
+    origin = "1970-01-01",
+    tz = "UTC"
+  )
+}
+
+format_sfog_valid_time <- function(x) {
+  
+  format(
+    lubridate::with_tz(x, "America/New_York"),
+    "%b %d, %Y %I:%M %p %Z"
+  )
+}
