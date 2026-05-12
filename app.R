@@ -314,16 +314,17 @@ ui <- fluidPage(
         column(
           9,
           
-          div(
-            style = "height:700px;",
-            leafletOutput("sfog_map", height = "70%")
+          leafletOutput(
+            "sfog_map",
+            height = "520px"
           ),
           
-          br(),
-          
-          plotOutput(
-            "sfog_point_risk_plot",
-            height = "250px"
+          div(
+            style = "margin-top:8px;",
+            plotOutput(
+              "sfog_point_risk_plot",
+              height = "250px"
+            )
           )
         ),
         column(
@@ -612,9 +613,9 @@ server <- function(input, output, session) {
     lat <- pt_info$lat
     lon <- pt_info$lon
     
-    validate(
-      need(!is.na(lat), "Please enter a valid latitude."),
-      need(!is.na(lon), "Please enter a valid longitude.")
+    shiny::validate(
+      shiny::need(!is.na(lat), "Please enter a valid latitude."),
+      shiny::need(!is.na(lon), "Please enter a valid longitude.")
     )
     
     x <- sfog_cache()
@@ -637,8 +638,8 @@ server <- function(input, output, session) {
       )[1, 2]
     )
     
-    validate(
-      need(
+    shiny::validate(
+      shiny::need(
         inside_domain,
         "Location is outside of the Southern Area."
       )
@@ -653,10 +654,16 @@ server <- function(input, output, session) {
     
     leafletProxy("sfog_map") |>
       clearGroup("Point Query") |>
-      addMarkers(
+      addCircleMarkers(
         lng = lon,
         lat = lat,
         group = "Point Query",
+        radius = 10,
+        stroke = TRUE,
+        weight = 2,
+        color = "white",
+        fillColor = "black",
+        fillOpacity = 1,
         label = paste0(
           "Point Query: ",
           round(lat, 4),
@@ -1453,6 +1460,73 @@ server <- function(input, output, session) {
         "America/New_York"
       ),
       "%b %d, %Y %I:%M %p %Z"
+    )
+  })
+  
+  output$sfog_point_risk_plot <- renderPlot({
+    
+    df <- sfog_point_risk()
+    
+    risk_colors <- c(
+      "1" = "#58AFDD",
+      "2" = "#FFB000",
+      "3" = "#CA0020"
+    )
+    
+    point_cols <- risk_colors[as.character(df$risk)]
+    
+    par(
+      mar = c(6, 6.5, 4, 6) + 0.1,
+      xpd = TRUE
+    )
+    
+    plot(
+      df$time_et,
+      df$risk,
+      type = "l",
+      lwd = 2,
+      col = "#666666",
+      ylim = c(0.8, 3.2),
+      xaxt = "n",
+      yaxt = "n",
+      xlab = "",
+      ylab = "",
+      main = paste0(
+        "Superfog Risk at ",
+        round(df$lat[1], 4),
+        ", ",
+        round(df$lon[1], 4)
+      )
+    )
+    
+    axis(
+      side = 2,
+      at = c(1, 2, 3),
+      labels = c(
+        "Minimal",
+        "Moderate",
+        "High"
+      ),
+      las = 1,
+      tick = TRUE,
+      cex.axis = 0.95
+    )
+    
+    points(
+      df$time_et,
+      df$risk,
+      pch = 21,
+      bg = point_cols,
+      col = "#333333",
+      cex = 2.1,
+      lwd = 1.2
+    )
+    
+    axis.POSIXct(
+      side = 1,
+      x = df$time_et,
+      format = "%m/%d\n%H:%M",
+      las = 2
     )
   })
   
