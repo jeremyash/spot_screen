@@ -252,7 +252,10 @@ ui <- fluidPage(
         
         column(
           9,
-          leafletOutput("sfog_map", height = "700px")
+          div(
+            style = "height:700px;",
+            leafletOutput("sfog_map", height = "100%")
+          )
         ),
         
         column(
@@ -275,6 +278,8 @@ ui <- fluidPage(
             p(
               "Layers are loaded dynamically to improve performance."
             ),
+            
+            uiOutput("sfog_time_selector"),
             
             verbatimTextOutput("sfog_status")
             
@@ -1118,6 +1123,29 @@ server <- function(input, output, session) {
       as.character(x$last_refresh)
     )
   })
+  
+  output$sfog_time_selector <- renderUI({
+    
+    if (!sfog_loaded()) {
+      return(NULL)
+    }
+    
+    x <- sfog_cache()
+    
+    selectInput(
+      inputId = "sfog_time_index",
+      label = "Forecast Time",
+      choices = setNames(
+        seq_along(x$valid_times),
+        format(
+          lubridate::with_tz(x$valid_times, "America/New_York"),
+          "%Y-%m-%d %H:%M %Z"
+        )
+      ),
+      selected = 1
+    )
+  })
+  
 }
 
 # -------------------------------------------------
