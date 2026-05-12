@@ -11,6 +11,7 @@ library(jsonlite)
 library(rvest)
 library(xml2)
 library(AirMonitor)
+library(terra)
 
 APP_MODE <- Sys.getenv("APP_MODE", unset = "dev")
 IS_DEV <- identical(APP_MODE, "dev")
@@ -22,6 +23,7 @@ source("R/cache_helpers.R")
 source("R/map_helpers.R")
 source("R/ui_helpers.R")
 source("R/airnow_helpers.R")
+source("R/sfog_helpers.R")
 
 # STATIC DATA AND CACHE----------------------------------------------
 
@@ -36,7 +38,7 @@ r8 <- st_read("region_8", quiet = TRUE) |>
 r8_forests$forest_id <- seq_len(nrow(r8_forests))
 
 cache_url <- "https://raw.githubusercontent.com/jeremyash/spot_screen/cache-data/cache/superfog_cache.rds"
-
+sfog_cache_url <- "https://raw.githubusercontent.com/jeremyash/sfog_vis/cache-data/cache/ndfd_superfog_cache.rds"
 
 
 
@@ -272,7 +274,10 @@ ui <- fluidPage(
             
             p(
               "Layers are loaded dynamically to improve performance."
-            )
+            ),
+            
+            verbatimTextOutput("sfog_status")
+            
           )
         )
       )
@@ -442,9 +447,23 @@ server <- function(input, output, session) {
     if (input$main_tabs == "Superfog Risk" && !sfog_loaded()) {
       message("Loading superfog visualization cache...")
       
-      # placeholder for future cache load
-      
-      sfog_loaded(TRUE)
+      try({
+        
+        sfog_cache(
+          download_sfog_cache(
+            paste0(
+              sfog_cache_url,
+              "?t=",
+              as.integer(Sys.time())
+            )
+          )
+        )
+        
+        sfog_loaded(TRUE)
+        
+        message("Superfog cache loaded successfully.")
+        
+      }, silent = TRUE)
     }
   })
   
@@ -1080,6 +1099,24 @@ server <- function(input, output, session) {
     }
     
     build_selected_info(prompt_text)
+  })
+  
+  output$sfog_status <- renderText({
+    
+    if (!sfog_loaded()) {
+      return("Superfog cache not loaded.")
+    }
+    
+    x <- sfog_cache()
+    
+    paste(
+      "Layers:",
+      terra::nlyr(x$sfog_ll),
+      "\nTimes:",
+      length(x$valid_times),
+      "\nLast refresh:",
+      as.character(x$last_refresh)
+    )
   })
 }
 
