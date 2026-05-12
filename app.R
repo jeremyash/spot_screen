@@ -830,15 +830,25 @@ server <- function(input, output, session) {
   })
   
   output$sfog_map <- renderLeaflet({
-    leaflet() |>
-      addTiles() |>
-      setView(lng = -88.11, lat = 34.95, zoom = 5) |>
+    leaflet(options = leafletOptions(preferCanvas = TRUE)) |>
+      addProviderTiles(providers$OpenStreetMap.Mapnik) |>
+      fitBounds(
+        lng1 = -96,
+        lat1 = 24,
+        lng2 = -74,
+        lat2 = 38
+      ) |>
       addPolygons(
         data = r8,
         fill = FALSE,
         color = "#000000",
         weight = 2,
         opacity = 1
+      ) |>
+      addControl(
+        html = sfog_risk_legend,
+        position = "bottomright",
+        layerId = "sfog_legend"
       )
   })
   
