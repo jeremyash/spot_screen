@@ -42,7 +42,7 @@ sfog_cache_url <- "https://raw.githubusercontent.com/jeremyash/sfog_vis/cache-da
 
 
 
-# AIRNOW AQI POLYGONS} ----------------------------------------------
+# AIRNOW AQI POLYGONS ----------------------------------------------
 
 # airnow_today <- NULL
 
@@ -117,9 +117,8 @@ tryCatch(
     message(e)
   }
 )
-# -------------------------------------------------
-# INITIAL CACHE LOAD
-# -------------------------------------------------
+
+# INITIAL CACHE LOAD ----------------------------------------------
 
 initial_cache <- tryCatch(
   download_remote_cache(paste0(cache_url, "?t=", as.integer(Sys.time()))),
@@ -134,9 +133,7 @@ initial_cache <- tryCatch(
 
 
 
-# -------------------------------------------------
-# UI
-# -------------------------------------------------
+# UI ----------------------------------------------
 
 ui <- fluidPage(
   
@@ -412,15 +409,12 @@ ui <- fluidPage(
   )
 )
 
-# -------------------------------------------------
-# SERVER
-# -------------------------------------------------
+# SERVER ----------------------------------------------
+
 
 server <- function(input, output, session) {
   
-  # -------------------------------------------------
-  # STATE / CACHE OBJECTS
-  # -------------------------------------------------
+  # STATE / CACHE OBJECTS -----------------------------------------------
   
   cache_data <- reactiveVal(initial_cache)
   
@@ -433,9 +427,8 @@ server <- function(input, output, session) {
   selected_burn_id <- reactiveVal(NULL)
   
   
-  # -------------------------------------------------
-  # CACHE LOADING OBSERVERS
-  # -------------------------------------------------
+  
+  # CACHE LOADING OBSERVERS ---------------------------------------------
   
   observe({
     invalidateLater(60 * 1000, session)
@@ -473,9 +466,7 @@ server <- function(input, output, session) {
   })
   
   
-  # -------------------------------------------------
-  # SHARED REACTIVES
-  # -------------------------------------------------
+  # SHARED REACTIVES ----------------------------------------------------
   
   burns_with_forest <- reactive({
     forecast_df <- cache_data()$forecast_df
@@ -503,10 +494,18 @@ server <- function(input, output, session) {
       mutate(forest = if_else(is.na(forest), "Not matched", forest))
   })
   
+  selected_sfog_raster <- reactive({
+    
+    req(sfog_loaded())
+    req(input$sfog_time_index)
+    
+    x <- sfog_cache()
+    
+    x$sfog_ll[[as.numeric(input$sfog_time_index)]]
+  })
   
-  # -------------------------------------------------
-  # HELPER FUNCTIONS INSIDE SERVER
-  # -------------------------------------------------
+  
+  # HELPER FUNCTIONS INSIDE SERVER --------------------------------------
   
   build_selected_info <- function(prompt_text) {
     clicked_id <- selected_burn_id()
@@ -638,9 +637,7 @@ server <- function(input, output, session) {
   }
   
   
-  # -------------------------------------------------
-  # TEXT OUTPUTS
-  # -------------------------------------------------
+  # TEXT OUTPUTS --------------------------------------------------------
   
   output$last_refresh_text <- renderText({
     lr <- cache_data()$last_refresh
@@ -656,9 +653,8 @@ server <- function(input, output, session) {
   })
   
   
-  # -------------------------------------------------
-  # MAP OUTPUTS
-  # -------------------------------------------------
+  
+  # MAP OUTPUTS ---------------------------------------------------------
   
   output$forecast_map <- renderLeaflet({
     df <- cache_data()$forecast_df
@@ -799,9 +795,7 @@ server <- function(input, output, session) {
   })
   
   
-  # -------------------------------------------------
-  # MAP PROXY OBSERVERS
-  # -------------------------------------------------
+  # MAP PROXY OBSERVERS -------------------------------------------------
   
   observeEvent(input$forecast_map_groups, {
     active_groups <- input$forecast_map_groups
@@ -941,19 +935,31 @@ server <- function(input, output, session) {
       )
   })
   
+  observe({
+    
+    req(sfog_loaded())
+    
+    r <- selected_sfog_raster()
+    
+    leafletProxy("sfog_map") |>
+      clearImages() |>
+      addRasterImage(
+        r,
+        opacity = 0.7,
+        project = TRUE
+      )
+  })
+
   
-  # -------------------------------------------------
-  # TABLE / SELECTION OBSERVERS
-  # -------------------------------------------------
+  # TABLE / SELECTION OBSERVERS -----------------------------------------
   
   observeEvent(input$table_burn_click, {
     selected_burn_id(input$table_burn_click)
   })
   
   
-  # -------------------------------------------------
-  # UI OUTPUTS
-  # -------------------------------------------------
+  
+  # UI OUTPUTS ----------------------------------------------------------
   
   output$burn_table_grouped <- renderUI({
     burns_tbl <- burns_with_forest()
@@ -1148,8 +1154,8 @@ server <- function(input, output, session) {
   
 }
 
-# -------------------------------------------------
-# RUN APP
-# -------------------------------------------------
+# RUN APP ----------------------------------------------
+
+code
 
 shinyApp(ui, server)
