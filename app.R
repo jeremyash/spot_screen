@@ -244,6 +244,41 @@ ui <- fluidPage(
     ),
     
     tabPanel(
+      "Superfog Risk",
+      
+      fluidRow(
+        
+        column(
+          9,
+          leafletOutput("sfog_map", height = "700px")
+        ),
+        
+        column(
+          3,
+          
+          div(
+            style = "
+          padding:15px;
+          border-left:1px solid #d9d9d9;
+          height:700px;
+          overflow-y:auto;
+        ",
+            
+            h3("Superfog Risk"),
+            
+            p(
+              "Experimental development version of the NDFD superfog visualization."
+            ),
+            
+            p(
+              "Layers are loaded dynamically to improve performance."
+            )
+          )
+        )
+      )
+    ), 
+    
+    tabPanel(
       "About",
       div(
         style = "max-width:950px; margin:auto; font-size:16px; line-height:1.7;",
@@ -1042,6 +1077,25 @@ server <- function(input, output, session) {
     }
     
     build_selected_info(prompt_text)
+  })
+  
+  # Superfog Risk
+  output$sfog_map <- renderLeaflet({
+    
+    leaflet() |>
+      addTiles() |>
+      setView(
+        lng = -88.11,
+        lat = 34.95,
+        zoom = 5
+      ) |>
+      addPolygons(
+        data = r8,
+        fill = FALSE,
+        color = "#000000",
+        weight = 2,
+        opacity = 1
+      )
   })
 }
 
