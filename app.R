@@ -38,43 +38,12 @@ r8 <- st_read("region_8", quiet = TRUE) |>
 r8_forests$forest_id <- seq_len(nrow(r8_forests))
 
 cache_url <- "https://raw.githubusercontent.com/jeremyash/spot_screen/cache-data/cache/superfog_cache.rds"
-
-
-offset_duplicate_points <- function(df, jitter_amount = 0.12) {
-  if (nrow(df) == 0) return(df)
-  
-  df %>%
-    mutate(
-      issued_rank = case_when(
-        issued == "Today" ~ 1L,
-        issued == "Yesterday" ~ 2L,
-        TRUE ~ 3L
-      )
-    ) %>%
-    group_by(lat, lon) %>%
-    arrange(issued_rank, project_name, issuanceTime, .by_group = TRUE) %>%
-    mutate(
-      dup_n = n(),
-      dup_id = row_number(),
-      same_coord_today_yesterday = any(issued == "Today") & any(issued == "Yesterday")
-    ) %>%
-    ungroup() %>%
-    mutate(
-      offset_lon = case_when(
-        same_coord_today_yesterday & issued == "Today" ~ lon - jitter_amount,
-        same_coord_today_yesterday & issued == "Yesterday" ~ lon + jitter_amount,
-        dup_n == 1 ~ lon,
-        TRUE ~ lon + (jitter_amount * 0.75) * cos(2 * pi * (dup_id - 1) / dup_n)
-      ),
-      offset_lat = case_when(
-        same_coord_today_yesterday & issued == "Today" ~ lat + jitter_amount * 0.35,
-        same_coord_today_yesterday & issued == "Yesterday" ~ lat - jitter_amount * 0.35,
-        dup_n == 1 ~ lat,
-        TRUE ~ lat + (jitter_amount * 0.75) * sin(2 * pi * (dup_id - 1) / dup_n)
-      )
-    ) %>%
-    select(-issued_rank, -dup_n, -dup_id, -same_coord_today_yesterday)
-}
+message("Sourcing helper files...")
+print(system.time({
+  source("R/cache_helpers.R")
+  source("R/map_helpers.R")
+  source("R/ui_helpers.R")
+}))
 
 format_issued_datetime <- function(x) {
   if (length(x) == 0 || all(is.na(x))) return(NA_character_)
