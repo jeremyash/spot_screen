@@ -42,7 +42,7 @@ cache_url <- "https://raw.githubusercontent.com/jeremyash/spot_screen/cache-data
 
 # AIRNOW AQI POLYGONS} ----------------------------------------------
 
-airnow_today <- NULL
+# airnow_today <- NULL
 
 tryCatch(
   expr = {
@@ -79,7 +79,7 @@ tryCatch(
   }
 )
 
-airnow_tomorrow <- NULL
+# airnow_tomorrow <- NULL
 
 tryCatch(
   expr = {
@@ -373,8 +373,10 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
+  # read cache data
   cache_data <- reactiveVal(initial_cache)
   
+  # refresh cache date
   observe({
     invalidateLater(60 * 1000, session)
     try({
@@ -385,7 +387,77 @@ server <- function(input, output, session) {
     }, silent = TRUE)
   })
   
+  # set up aqi polygons
+  airnow_today_data <- reactiveVal(NULL)
+  airnow_tomorrow_data <- reactiveVal(NULL)
+  
+  observe({
+    
+    map_ready <- input$forecast_map_bounds
+    
+    req(map_ready)
+    
+    if (is.null(airnow_today_data())) {
+      
+      try({
+        
+        sf_airnow_today <- sf::st_read(
+          "https://s3-us-west-1.amazonaws.com/files.airnowtech.org/airnow/today/forecast_today_usa.kml",
+          quiet = TRUE
+        ) |>
+          sf::st_zm()
+        
+        desc_col <- if ("description" %in% names(sf_airnow_today)) {
+          "description"
+        } else {
+          "Description"
+        }
+        
+        sf_airnow_today <- sf_airnow_today |>
+          mutate(
+            aqi_cat = extract_aqi_cat(.data[[desc_col]]),
+            aqi_color = unname(namedColors[aqi_cat])
+          ) |>
+          filter(aqi_cat != "Good")
+        
+        airnow_today_data(sf_airnow_today)
+        
+      }, silent = TRUE)
+    }
+    
+    if (is.null(airnow_tomorrow_data())) {
+      
+      try({
+        
+        sf_airnow_tomorrow <- sf::st_read(
+          "https://s3-us-west-1.amazonaws.com/files.airnowtech.org/airnow/today/forecast_tomorrow_usa.kml",
+          quiet = TRUE
+        ) |>
+          sf::st_zm()
+        
+        desc_col <- if ("description" %in% names(sf_airnow_tomorrow)) {
+          "description"
+        } else {
+          "Description"
+        }
+        
+        sf_airnow_tomorrow <- sf_airnow_tomorrow |>
+          mutate(
+            aqi_cat = extract_aqi_cat(.data[[desc_col]]),
+            aqi_color = unname(namedColors[aqi_cat])
+          ) |>
+          filter(aqi_cat != "Good")
+        
+        airnow_tomorrow_data(sf_airnow_tomorrow)
+        
+      }, silent = TRUE)
+    }
+  })
+  
+  
+  # set up burn id parameter
   selected_burn_id <- reactiveVal(NULL)
+  
   
   observeEvent(input$main_tabs, {
     selected_burn_id(NULL)
@@ -476,6 +548,9 @@ server <- function(input, output, session) {
         smoothFactor = 0.5,
         options = pathOptions(clickable = TRUE)
       )
+    
+    airnow_today <- airnow_today_data()
+    airnow_tomorrow <- airnow_tomorrow_data()
     
     if (!is.null(airnow_today) && nrow(airnow_today) > 0) {
       m <- m |>
