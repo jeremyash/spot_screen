@@ -156,10 +156,10 @@ ui <- fluidPage(
     id = "main_tabs",
     
     
-    # MAP TAB ----
+    # SPOT MAP TAB ----
     
     tabPanel(
-      "Map",
+      "Spot Map",
       fluidRow(
         column(
           8,
@@ -194,10 +194,10 @@ ui <- fluidPage(
     ),
     
     
-    # TABLE TAB ----
+    # SPOT TABLE TAB ----
     
     tabPanel(
-      "Table",
+      "Spot Table",
       fluidRow(
         column(
           5,
@@ -232,6 +232,8 @@ ui <- fluidPage(
     
     # SUPERFOG RISK TAB ----
     
+    # SUPERFOG RISK TAB ----
+    
     tabPanel(
       "Superfog Risk",
       fluidRow(
@@ -245,19 +247,19 @@ ui <- fluidPage(
               "sfog_reset_map_view",
               "Reset Map View",
               style = "
-                position:absolute;
-                top:10px;
-                right:10px;
-                z-index:1000;
-                background:white;
-                border:2px solid rgba(0,0,0,0.2);
-                border-radius:4px;
-                padding:6px 10px;
-                font-size:13px;
-                font-weight:600;
-                cursor:pointer;
-                box-shadow:0 1px 4px rgba(0,0,0,0.3);
-              "
+            position:absolute;
+            top:10px;
+            right:10px;
+            z-index:1000;
+            background:white;
+            border:2px solid rgba(0,0,0,0.2);
+            border-radius:4px;
+            padding:6px 10px;
+            font-size:13px;
+            font-weight:600;
+            cursor:pointer;
+            box-shadow:0 1px 4px rgba(0,0,0,0.3);
+          "
             ),
             
             leafletOutput(
@@ -274,18 +276,19 @@ ui <- fluidPage(
             )
           )
         ),
+        
         column(
           3,
           div(
             style = "
-              padding:15px;
-              border-left:1px solid #d9d9d9;
-              height:700px;
-              overflow-y:auto;
-            ",
+          padding:15px;
+          border-left:1px solid #d9d9d9;
+          height:700px;
+          overflow-y:auto;
+        ",
+            
             h3("Superfog Risk"),
-            p("Experimental development version of the NDFD superfog visualization."),
-            p("Layers are loaded dynamically to improve performance."),
+            
             fluidRow(
               column(
                 width = 2,
@@ -293,7 +296,15 @@ ui <- fluidPage(
                   "sfog_prev_hour",
                   label = NULL,
                   icon = icon("chevron-left"),
-                  width = "100%"
+                  width = "100%",
+                  style = "
+                    height:38px;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    padding:0;
+                    font-size:22px;
+                  "
                 )
               ),
               
@@ -301,14 +312,14 @@ ui <- fluidPage(
                 width = 8,
                 div(
                   style = "
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        height:38px;
-        font-weight:bold;
-        font-size:18px;
-        text-align:center;
-      ",
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                height:38px;
+                font-weight:bold;
+                font-size:18px;
+                text-align:center;
+              ",
                   textOutput("sfog_valid_time")
                 )
               ),
@@ -319,7 +330,15 @@ ui <- fluidPage(
                   "sfog_next_hour",
                   label = NULL,
                   icon = icon("chevron-right"),
-                  width = "100%"
+                  width = "100%",
+                  style = "
+                    height:38px;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    padding:0;
+                    font-size:22px;
+                  "
                 )
               )
             ),
@@ -328,6 +347,7 @@ ui <- fluidPage(
             
             uiOutput("sfog_time_slider"),
             verbatimTextOutput("sfog_status"),
+            
             hr(),
             
             h4("Point Risk Time Series"),
@@ -1273,18 +1293,14 @@ server <- function(input, output, session) {
   output$sfog_status <- renderText({
     
     if (!sfog_loaded()) {
-      return("Superfog cache not loaded.")
+      return("Last refreshed: cache not loaded")
     }
     
     x <- sfog_cache()
     
-    paste(
-      "Layers:",
-      terra::nlyr(x$sfog_ll),
-      "\nTimes:",
-      length(x$valid_times),
-      "\nLast refresh:",
-      as.character(x$last_refresh)
+    paste0(
+      "Last refreshed: ",
+      format_sfog_valid_time(x$last_refresh)
     )
   })
   
