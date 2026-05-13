@@ -5,9 +5,9 @@ build_selected_info <- function(
 ) {
   clicked_id <- selected_burn_id
   
-  if (is.null(clicked_id)) {
+  if (base::is.null(clicked_id)) {
     return(
-      div(
+      htmltools::div(
         style = "
             margin-top:20px;
             padding:15px;
@@ -24,18 +24,18 @@ build_selected_info <- function(
   forecast_df <- cache_data$forecast_df
   sfog_tables <- cache_data$sfog_tables
   
-  idx <- which(forecast_df$spot_id == clicked_id)
+  idx <- base::which(forecast_df$spot_id == clicked_id)
   
-  if (length(idx) == 0) return(NULL)
+  if (base::length(idx) == 0) return(NULL)
   
   spot_url <- forecast_df$nws_spot_url[idx]
   project <- forecast_df$project_name[idx]
   sfog_df <- sfog_tables[[idx]]
   issued_display <- format_issued_datetime(forecast_df$issuanceTime[idx])
   
-  if (is.null(sfog_df)) {
+  if (base::is.null(sfog_df)) {
     return(
-      HTML(paste0(
+      htmltools::HTML(base::paste0(
         'Unable to screen. Please consult your <a href="',
         spot_url,
         '" target="_blank">spot forecast</a>.'
@@ -43,67 +43,154 @@ build_selected_info <- function(
     )
   }
   
-  sfog_status <- sfog_df %>%
-    rowwise() %>%
-    mutate(
-      critical_count = sum(
-        c_across(c(sky_screen, temp_screen, rh_screen, wind_screen)) %in%
-          c("critical", "watch_out")
+  sfog_status <- sfog_df |>
+    dplyr::rowwise() |>
+    dplyr::mutate(
+      critical_count = base::sum(
+        dplyr::c_across(
+          c(sky_screen, temp_screen, rh_screen, wind_screen)
+        ) %in% c("critical", "watch_out")
       )
-    ) %>%
-    ungroup()
+    ) |>
+    dplyr::ungroup()
   
-  total_max <- max(sfog_status$critical_count, na.rm = TRUE)
+  total_max <- base::max(sfog_status$critical_count, na.rm = TRUE)
   
   if (total_max == 4) {
-    sfog_box <- div(
+    
+    sfog_box <- htmltools::div(
       style = "border:4px solid red; background-color:#FFDADA; color:black; padding:12px; font-size:15px; margin:10px;",
-      div(style = "font-weight:bold; font-size:18px; margin-bottom:6px;", "PB Piedmont Required"),
-      HTML('Superfog criteria have been met. Please run a <a href="https://piedmont.dri.edu/" target="_blank">PB Piedmont model</a>.')
+      
+      htmltools::div(
+        style = "font-weight:bold; font-size:18px; margin-bottom:6px;",
+        "PB Piedmont Required"
+      ),
+      
+      htmltools::HTML(
+        'Superfog criteria have been met. Please run a <a href="https://piedmont.dri.edu/" target="_blank">PB Piedmont model</a>.'
+      )
     )
+    
   } else if (total_max == 3) {
-    sfog_box <- div(
+    
+    sfog_box <- htmltools::div(
       style = "border:4px solid orange; background-color:#FFE8CC; color:black; padding:12px; font-size:15px; margin:10px;",
-      div(style = "font-weight:bold; font-size:18px; margin-bottom:6px;", "PB Piedmont Recommended"),
-      HTML('Most superfog criteria have been met. Running a <a href="https://piedmont.dri.edu/" target="_blank">PB Piedmont model</a> is recommended.')
+      
+      htmltools::div(
+        style = "font-weight:bold; font-size:18px; margin-bottom:6px;",
+        "PB Piedmont Recommended"
+      ),
+      
+      htmltools::HTML(
+        'Most superfog criteria have been met. Running a <a href="https://piedmont.dri.edu/" target="_blank">PB Piedmont model</a> is recommended.'
+      )
     )
+    
   } else {
-    sfog_box <- div(
+    
+    sfog_box <- htmltools::div(
       style = "border:4px solid #777777; background-color:#D9D9D9; color:black; padding:12px; font-size:15px; margin:10px;",
-      div(style = "font-weight:bold; font-size:18px; margin-bottom:6px;", "PB Piedmont Not Required"),
+      
+      htmltools::div(
+        style = "font-weight:bold; font-size:18px; margin-bottom:6px;",
+        "PB Piedmont Not Required"
+      ),
+      
       "Superfog criteria have not been met."
     )
   }
   
-  kbl_table <- sfog_df %>%
-    mutate(
-      SKY = cell_spec(SKY, format = "html", extra_css = sapply(sky_screen, function(v) {
-        css <- if (v == "critical") "background-color:#CA0020;color:white;font-weight:bold;text-align:center;"
-        else if (v == "watch_out") "background-color:#FFDA00;color:black;font-weight:bold;text-align:center;"
-        else "background-color:#D9D9D9;color:black;font-weight:bold;text-align:center;"
-        paste0("display:block;width:100%;height:100%;", css)
-      })),
-      TEMP = cell_spec(TEMP, format = "html", extra_css = sapply(temp_screen, function(v) {
-        css <- if (v == "critical") "background-color:#CA0020;color:white;font-weight:bold;text-align:center;"
-        else if (v == "watch_out") "background-color:#FFDA00;color:black;font-weight:bold;text-align:center;"
-        else "background-color:#D9D9D9;color:black;font-weight:bold;text-align:center;"
-        paste0("display:block;width:100%;height:100%;", css)
-      })),
-      RH = cell_spec(RH, format = "html", extra_css = sapply(rh_screen, function(v) {
-        css <- if (v == "critical") "background-color:#CA0020;color:white;font-weight:bold;text-align:center;"
-        else if (v == "watch_out") "background-color:#FFDA00;color:black;font-weight:bold;text-align:center;"
-        else "background-color:#D9D9D9;color:black;font-weight:bold;text-align:center;"
-        paste0("display:block;width:100%;height:100%;", css)
-      })),
-      WIND = cell_spec(WIND, format = "html", extra_css = sapply(wind_screen, function(v) {
-        css <- if (v == "critical") "background-color:#CA0020;color:white;font-weight:bold;text-align:center;"
-        else if (v == "watch_out") "background-color:#FFDA00;color:black;font-weight:bold;text-align:center;"
-        else "background-color:#D9D9D9;color:black;font-weight:bold;text-align:center;"
-        paste0("display:block;width:100%;height:100%;", css)
-      }))
-    ) %>%
-    select(DATETIME, TEMP, RH, WIND, SKY) %>%
-    kbl(
+  kbl_table <- sfog_df |>
+    dplyr::mutate(
+      
+      SKY = kableExtra::cell_spec(
+        SKY,
+        format = "html",
+        extra_css = base::sapply(sky_screen, function(v) {
+          
+          css <- if (v == "critical") {
+            "background-color:#CA0020;color:white;font-weight:bold;text-align:center;"
+          } else if (v == "watch_out") {
+            "background-color:#FFDA00;color:black;font-weight:bold;text-align:center;"
+          } else {
+            "background-color:#D9D9D9;color:black;font-weight:bold;text-align:center;"
+          }
+          
+          base::paste0(
+            "display:block;width:100%;height:100%;",
+            css
+          )
+        })
+      ),
+      
+      TEMP = kableExtra::cell_spec(
+        TEMP,
+        format = "html",
+        extra_css = base::sapply(temp_screen, function(v) {
+          
+          css <- if (v == "critical") {
+            "background-color:#CA0020;color:white;font-weight:bold;text-align:center;"
+          } else if (v == "watch_out") {
+            "background-color:#FFDA00;color:black;font-weight:bold;text-align:center;"
+          } else {
+            "background-color:#D9D9D9;color:black;font-weight:bold;text-align:center;"
+          }
+          
+          base::paste0(
+            "display:block;width:100%;height:100%;",
+            css
+          )
+        })
+      ),
+      
+      RH = kableExtra::cell_spec(
+        RH,
+        format = "html",
+        extra_css = base::sapply(rh_screen, function(v) {
+          
+          css <- if (v == "critical") {
+            "background-color:#CA0020;color:white;font-weight:bold;text-align:center;"
+          } else if (v == "watch_out") {
+            "background-color:#FFDA00;color:black;font-weight:bold;text-align:center;"
+          } else {
+            "background-color:#D9D9D9;color:black;font-weight:bold;text-align:center;"
+          }
+          
+          base::paste0(
+            "display:block;width:100%;height:100%;",
+            css
+          )
+        })
+      ),
+      
+      WIND = kableExtra::cell_spec(
+        WIND,
+        format = "html",
+        extra_css = base::sapply(wind_screen, function(v) {
+          
+          css <- if (v == "critical") {
+            "background-color:#CA0020;color:white;font-weight:bold;text-align:center;"
+          } else if (v == "watch_out") {
+            "background-color:#FFDA00;color:black;font-weight:bold;text-align:center;"
+          } else {
+            "background-color:#D9D9D9;color:black;font-weight:bold;text-align:center;"
+          }
+          
+          base::paste0(
+            "display:block;width:100%;height:100%;",
+            css
+          )
+        })
+      )
+    ) |>
+    dplyr::select(
+      DATETIME,
+      TEMP,
+      RH,
+      WIND,
+      SKY
+    ) |>
+    kableExtra::kbl(
       escape = FALSE,
       align = "c",
       col.names = c(
@@ -113,20 +200,54 @@ build_selected_info <- function(
         "Wind<br>Speed (mph)",
         "Cloud<br>Cover (%)"
       )
-    ) %>%
-    kable_styling(full_width = FALSE, font_size = 16)
+    ) |>
+    kableExtra::kable_styling(
+      full_width = FALSE,
+      font_size = 16
+    )
   
-  tagList(
-    h3(style = "font-weight:bold; font-size:24px;", project),
-    div(style = "margin-bottom:6px; font-size:16px;", a("Full Spot Weather Forecast", href = spot_url, target = "_blank")),
-    div(style = "margin-bottom:10px; font-size:16px; color:#555;", paste0("Date Issued: ", issued_display)),
+  htmltools::tagList(
+    
+    htmltools::h3(
+      style = "font-weight:bold; font-size:24px;",
+      project
+    ),
+    
+    htmltools::div(
+      style = "margin-bottom:6px; font-size:16px;",
+      htmltools::a(
+        "Full Spot Weather Forecast",
+        href = spot_url,
+        target = "_blank"
+      )
+    ),
+    
+    htmltools::div(
+      style = "margin-bottom:10px; font-size:16px; color:#555;",
+      base::paste0("Date Issued: ", issued_display)
+    ),
+    
     sfog_box,
-    HTML(as.character(kbl_table)),
-    div(
+    
+    htmltools::HTML(base::as.character(kbl_table)),
+    
+    htmltools::div(
       style = "text-align:center; font-size:18px; margin-top:8px;",
-      span(style = "background-color:#CA0020;color:white;padding:8px 12px;margin-right:6px;font-weight:bold;", "Critical"),
-      span(style = "background-color:#FFDA00;color:black;padding:8px 12px;margin-right:6px;font-weight:bold;", "Watch Out"),
-      span(style = "background-color:#D9D9D9;color:black;padding:8px 12px;margin-right:6px;font-weight:bold;", "Minimal Concern")
+      
+      htmltools::span(
+        style = "background-color:#CA0020;color:white;padding:8px 12px;margin-right:6px;font-weight:bold;",
+        "Critical"
+      ),
+      
+      htmltools::span(
+        style = "background-color:#FFDA00;color:black;padding:8px 12px;margin-right:6px;font-weight:bold;",
+        "Watch Out"
+      ),
+      
+      htmltools::span(
+        style = "background-color:#D9D9D9;color:black;padding:8px 12px;margin-right:6px;font-weight:bold;",
+        "Minimal Concern"
+      )
     )
   )
 }

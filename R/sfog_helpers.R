@@ -4,7 +4,7 @@ download_sfog_cache <- function(url) {
   
   on.exit(unlink(tf), add = TRUE)
   
-  download.file(
+  utils::download.file(
     url = url,
     destfile = tf,
     mode = "wb",
@@ -41,7 +41,7 @@ get_sfog_valid_times <- function(sfog_cache_obj) {
   
   valid_times <- sfog_cache_obj$valid_times
   
-  as.POSIXct(
+  base::as.POSIXct(
     valid_times,
     origin = "1970-01-01",
     tz = "UTC"

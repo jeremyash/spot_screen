@@ -12,7 +12,12 @@ extract_aqi_cat <- function(x) {
     function(txt) {
       tryCatch(
         {
-          html_text(html_elements(read_html(txt), "i"))[1]
+          rvest::html_text(
+            rvest::html_elements(
+              xml2::read_html(txt),
+              "i"
+            )
+          )[1]
         },
         error = function(e) NA_character_
       )

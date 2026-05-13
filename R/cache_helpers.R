@@ -1,10 +1,10 @@
 download_remote_cache <- function(url) {
   tf <- tempfile(fileext = ".rds")
   
-  resp <- request(url) |>
-    req_perform()
+  resp <- httr2::request(url) |>
+    httr2::req_perform()
   
-  writeBin(resp_body_raw(resp), tf)
+  writeBin(httr2::resp_body_raw(resp), tf)
   x <- readRDS(tf)
   
   if (!all(c("forecast_df", "sfog_tables", "last_refresh") %in% names(x))) {
@@ -17,10 +17,10 @@ download_remote_cache <- function(url) {
 format_issued_datetime <- function(x) {
   if (length(x) == 0 || all(is.na(x))) return(NA_character_)
   
-  x_posix <- suppressWarnings(ymd_hms(x, tz = "UTC"))
+  x_posix <- suppressWarnings(lubridate::ymd_hms(x, tz = "UTC"))
   
   if (all(is.na(x_posix))) {
-    x_posix <- suppressWarnings(ymd_hm(x, tz = "UTC"))
+    x_posix <- suppressWarnings(lubridate::ymd_hm(x, tz = "UTC"))
   }
   
   if (all(is.na(x_posix))) {
@@ -31,5 +31,5 @@ format_issued_datetime <- function(x) {
     return(as.character(x))
   }
   
-  format(with_tz(x_posix, "America/New_York"), "%Y-%m-%d %H:%M %Z")
+  format(lubridate::with_tz(x_posix, "America/New_York"), "%Y-%m-%d %H:%M %Z")
 }
