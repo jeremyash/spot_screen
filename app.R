@@ -81,13 +81,7 @@ ui <- fluidPage(
             
     # Superfog PNG overlay CSS ----
             
-    tags$style(HTML("
-        .sfog-png-overlay {
-          image-rendering: pixelated;
-          image-rendering: crisp-edges;
-          -ms-interpolation-mode: nearest-neighbor;
-        }
-        ")),
+    sfog_overlay_css(),
     
     # Spot map controls JavaScript ----
     

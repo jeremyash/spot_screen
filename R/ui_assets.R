@@ -37,3 +37,13 @@ sfog_overlay_js <- function() {
     });
   "))
 }
+
+sfog_overlay_css <- function() {
+  htmltools::tags$style(htmltools::HTML("
+    .sfog-png-overlay {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      -ms-interpolation-mode: nearest-neighbor;
+    }
+  "))
+}
