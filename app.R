@@ -80,20 +80,10 @@ ui <- fluidPage(
             
             
     # Superfog PNG overlay CSS ----
-            
     sfog_overlay_css(),
     
     # Spot map controls JavaScript ----
-    
-    tags$script(HTML("
-      $(document).on('click', '#reset_map', function () {
-        Shiny.setInputValue('reset_map_click', Math.random());
-      });
-
-      $(document).on('change', 'input[name=\"date_layer_choice\"]', function () {
-        Shiny.setInputValue('map_layer_choice', $(this).val(), {priority: 'event'});
-      });
-    "))
+    spot_map_controls_js()
   ),
   
   

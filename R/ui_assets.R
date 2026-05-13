@@ -47,3 +47,15 @@ sfog_overlay_css <- function() {
     }
   "))
 }
+
+spot_map_controls_js <- function() {
+  htmltools::tags$script(htmltools::HTML("
+    $(document).on('click', '#reset_map', function () {
+      Shiny.setInputValue('reset_map_click', Math.random());
+    });
+
+    $(document).on('change', 'input[name=\"date_layer_choice\"]', function () {
+      Shiny.setInputValue('map_layer_choice', $(this).val(), {priority: 'event'});
+    });
+  "))
+}
