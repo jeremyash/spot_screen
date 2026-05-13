@@ -744,19 +744,7 @@ server <- function(input, output, session) {
         position = "bottomleft"
       ) |>
       addControl(
-        html = "
-          <button id='reset_map' 
-            style='
-              background:white;
-              border:1px solid #999;
-              padding:6px 10px;
-              font-weight:bold;
-              border-radius:4px;
-              cursor:pointer;
-            '>
-            Reset Map View
-          </button>
-        ",
+        html = spot_map_reset_button(),
         position = "topright"
       )
   })

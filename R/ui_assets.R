@@ -95,3 +95,20 @@ spot_map_toggle_legend <- function(
     "</div>"
   )
 }
+
+spot_map_reset_button <- function() {
+  
+  "
+  <button id='reset_map' 
+    style='
+      background:white;
+      border:1px solid #999;
+      padding:6px 10px;
+      font-weight:bold;
+      border-radius:4px;
+      cursor:pointer;
+    '>
+    Reset Map View
+  </button>
+  "
+}
