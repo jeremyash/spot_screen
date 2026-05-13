@@ -25,6 +25,7 @@ source("R/ui_helpers.R")
 source("R/airnow_helpers.R")
 source("R/sfog_helpers.R")
 source("R/selected_info_helpers.R")
+source("R/ui_assets.R")
 
 # STATIC DATA AND CACHE----------------------------------------------
 
@@ -75,44 +76,7 @@ ui <- fluidPage(
     tags$link(rel = "mask-icon", href = "safari-pinned_v2.svg", color = "#3A3640"),
     
     # Superfog PNG overlay JavaScript ----
-    
-    tags$script(HTML("
-        Shiny.addCustomMessageHandler('sfog_set_overlay', function(data) {
-        
-          var widgets = HTMLWidgets.findAll('.leaflet');
-          if (!widgets.length) return;
-        
-          var map = null;
-        
-          for (var i = 0; i < widgets.length; i++) {
-            if (widgets[i].getMap) {
-        
-              var candidate = widgets[i].getMap();
-        
-              if (candidate._container.id === 'sfog_map') {
-                map = candidate;
-                break;
-              }
-            }
-          }
-        
-          if (!map) return;
-        
-          if (window.sfogRiskOverlay && map.hasLayer(window.sfogRiskOverlay)) {
-            map.removeLayer(window.sfogRiskOverlay);
-          }
-        
-          var bounds = [
-            [data.south, data.west],
-            [data.north, data.east]
-          ];
-        
-          window.sfogRiskOverlay = L.imageOverlay(data.url, bounds, {
-            opacity: 0.7,
-            className: 'sfog-png-overlay'
-          }).addTo(map);
-        });
-        ")),
+    sfog_overlay_js(),
             
             
     # Superfog PNG overlay CSS ----
@@ -932,6 +896,14 @@ server <- function(input, output, session) {
         hideGroup("AQI Forecast Tomorrow")
     }
   }, ignoreInit = TRUE)
+  
+  observeEvent(input$forecast_map_marker_click, {
+    
+    handle_burn_click(
+      input$forecast_map_marker_click,
+      selected_burn_id
+    )
+  })
   
   observeEvent(input$forecast_map_shape_click, {
     click <- input$forecast_map_shape_click
