@@ -43,82 +43,6 @@ sfog_cache_url <- "https://raw.githubusercontent.com/jeremyash/sfog_vis/cache-da
 
 
 
-# AIRNOW AQI POLYGONS ----------------------------------------------
-
-# airnow_today <- NULL
-
-tryCatch(
-  expr = {
-    sf_airnow_today <-
-      sf::st_read(
-        "https://s3-us-west-1.amazonaws.com/files.airnowtech.org/airnow/today/forecast_today_usa.kml",
-        quiet = TRUE
-      ) %>%
-      sf::st_zm()
-    
-    if ("description" %in% names(sf_airnow_today)) {
-      sf_airnow_today <-
-        sf_airnow_today %>%
-        mutate(
-          aqi_cat = extract_aqi_cat(description),
-          aqi_color = unname(namedColors[aqi_cat])
-        ) %>%
-        filter(aqi_cat != "Good")
-      airnow_today <- sf_airnow_today
-    } else if ("Description" %in% names(sf_airnow_today)) {
-      sf_airnow_today <-
-        sf_airnow_today %>%
-        mutate(
-          aqi_cat = extract_aqi_cat(Description),
-          aqi_color = unname(namedColors[aqi_cat])
-        ) %>%
-        filter(aqi_cat != "Good")
-      airnow_today <- sf_airnow_today
-    }
-  },
-  error = function(e) {
-    message("FAILED TO LOAD forecast_today_usa.kml")
-    message(e)
-  }
-)
-
-# airnow_tomorrow <- NULL
-
-tryCatch(
-  expr = {
-    sf_airnow_tomorrow <-
-      sf::st_read(
-        "https://s3-us-west-1.amazonaws.com/files.airnowtech.org/airnow/today/forecast_tomorrow_usa.kml",
-        quiet = TRUE
-      ) %>%
-      sf::st_zm()
-    
-    if ("description" %in% names(sf_airnow_tomorrow)) {
-      sf_airnow_tomorrow <-
-        sf_airnow_tomorrow %>%
-        mutate(
-          aqi_cat = extract_aqi_cat(description),
-          aqi_color = unname(namedColors[aqi_cat])
-        ) %>%
-        filter(aqi_cat != "Good")
-      airnow_tomorrow <- sf_airnow_tomorrow
-    } else if ("Description" %in% names(sf_airnow_tomorrow)) {
-      sf_airnow_tomorrow <-
-        sf_airnow_tomorrow %>%
-        mutate(
-          aqi_cat = extract_aqi_cat(Description),
-          aqi_color = unname(namedColors[aqi_cat])
-        ) %>%
-        filter(aqi_cat != "Good")
-      airnow_tomorrow <- sf_airnow_tomorrow
-    }
-  },
-  error = function(e) {
-    message("FAILED TO LOAD forecast_tomorrow_usa.kml")
-    message(e)
-  }
-)
-
 # INITIAL CACHE LOAD ----------------------------------------------
 
 initial_cache <- tryCatch(
@@ -131,7 +55,6 @@ initial_cache <- tryCatch(
     )
   }
 )
-
 
 
 # UI ----------------------------------------------
@@ -553,6 +476,9 @@ server <- function(input, output, session) {
   airnow_today_data <- reactiveVal(NULL)
   airnow_tomorrow_data <- reactiveVal(NULL)
   
+  airnow_today_added <- reactiveVal(FALSE)
+  airnow_tomorrow_added <- reactiveVal(FALSE)
+  
   sfog_cache <- reactiveVal(NULL)
   sfog_loaded <- reactiveVal(FALSE)
   
@@ -926,60 +852,67 @@ server <- function(input, output, session) {
     active_groups <- input$forecast_map_groups
     
     if ("AQI Forecast Today" %in% active_groups) {
+      
       if (is.null(airnow_today_data())) {
         airnow_today_data(load_airnow_kml("today"))
       }
       
+      if (!airnow_today_added()) {
+        leafletProxy("forecast_map") |>
+          addPolygons(
+            data = airnow_today_data(),
+            fillColor = ~aqi_color,
+            fillOpacity = 0.8,
+            color = ~aqi_color,
+            weight = 1,
+            opacity = 0.8,
+            smoothFactor = 0.5,
+            popup = ~paste0("<strong>AQI Forecast Today</strong><br>", aqi_cat),
+            group = "AQI Forecast Today"
+          )
+        
+        airnow_today_added(TRUE)
+      }
+      
       leafletProxy("forecast_map") |>
-        clearGroup("AQI Forecast Today") |>
-        addPolygons(
-          data = airnow_today_data(),
-          fillColor = ~aqi_color,
-          fillOpacity = 0.8,
-          color = ~aqi_color,
-          weight = 1,
-          opacity = 0.8,
-          smoothFactor = 0.5,
-          popup = ~paste0("<strong>AQI Forecast Today</strong><br>", aqi_cat),
-          group = "AQI Forecast Today"
-        ) |>
         showGroup("AQI Forecast Today")
+      
     } else {
       leafletProxy("forecast_map") |>
         hideGroup("AQI Forecast Today")
     }
     
     if ("AQI Forecast Tomorrow" %in% active_groups) {
+      
       if (is.null(airnow_tomorrow_data())) {
         airnow_tomorrow_data(load_airnow_kml("tomorrow"))
       }
       
+      if (!airnow_tomorrow_added()) {
+        leafletProxy("forecast_map") |>
+          addPolygons(
+            data = airnow_tomorrow_data(),
+            fillColor = ~aqi_color,
+            fillOpacity = 0.8,
+            color = ~aqi_color,
+            weight = 1,
+            opacity = 0.8,
+            smoothFactor = 0.5,
+            popup = ~paste0("<strong>AQI Forecast Tomorrow</strong><br>", aqi_cat),
+            group = "AQI Forecast Tomorrow"
+          )
+        
+        airnow_tomorrow_added(TRUE)
+      }
+      
       leafletProxy("forecast_map") |>
-        clearGroup("AQI Forecast Tomorrow") |>
-        addPolygons(
-          data = airnow_tomorrow_data(),
-          fillColor = ~aqi_color,
-          fillOpacity = 0.8,
-          color = ~aqi_color,
-          weight = 1,
-          opacity = 0.8,
-          smoothFactor = 0.5,
-          popup = ~paste0("<strong>AQI Forecast Tomorrow</strong><br>", aqi_cat),
-          group = "AQI Forecast Tomorrow"
-        ) |>
         showGroup("AQI Forecast Tomorrow")
+      
     } else {
       leafletProxy("forecast_map") |>
         hideGroup("AQI Forecast Tomorrow")
     }
   }, ignoreInit = TRUE)
-  
-  observeEvent(input$forecast_map_marker_click, {
-    handle_burn_click(
-      input$forecast_map_marker_click,
-      selected_burn_id
-    )
-  })
   
   observeEvent(input$forecast_map_shape_click, {
     click <- input$forecast_map_shape_click
