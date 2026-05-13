@@ -1250,26 +1250,7 @@ server <- function(input, output, session) {
       return(NULL)
     }
     
-    htmltools::div(
-      style = "
-      position:absolute;
-      inset:0;
-      z-index:900;
-      background:rgba(255,255,255,0.82);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:18px;
-      font-weight:600;
-      color:#444;
-      border:1px solid #d9d9d9;
-    ",
-      htmltools::span(
-        class = "fa fa-spinner fa-spin",
-        style = "font-size:22px; margin-right:10px;"
-      ),
-      "Loading Spot Map..."
-    )
+    map_loading_overlay("Loading Spot Map...")
   })
   
   
@@ -1500,26 +1481,7 @@ server <- function(input, output, session) {
       return(NULL)
     }
     
-    htmltools::div(
-      style = "
-      position:absolute;
-      inset:0;
-      z-index:900;
-      background:rgba(255,255,255,0.82);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:18px;
-      font-weight:600;
-      color:#444;
-      border:1px solid #d9d9d9;
-    ",
-      htmltools::span(
-        class = "fa fa-spinner fa-spin",
-        style = "font-size:22px; margin-right:10px;"
-      ),
-      "Loading Superfog Risk map..."
-    )
+    map_loading_overlay("Loading Superfog Risk map...")
   })
 
 }
