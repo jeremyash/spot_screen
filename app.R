@@ -731,26 +731,9 @@ server <- function(input, output, session) {
       }
     }
     
-    legend_toggle_html <- paste0(
-      "<div style='background:white;padding:8px 10px;border-radius:6px;",
-      "box-shadow:0 0 6px rgba(0,0,0,0.3);font-size:14px;line-height:1.2;",
-      "min-width:180px;font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;'>",
-      "<div style='font-weight:600; font-size:16px; margin-bottom:6px;'>Date Issued</div>",
-      "<label style='display:grid; grid-template-columns:30px 1fr 18px; align-items:center; column-gap:8px; margin-bottom:4px; cursor:pointer;'>",
-      "<span style='display:flex; align-items:center; justify-content:center;'>",
-      "<img src='", fire_icon_url_today, "' style='width:24px; height:24px;'>",
-      "</span>",
-      "<span style='font-size:15px;'>Today</span>",
-      "<input type='radio' name='date_layer_choice' value='Today' checked>",
-      "</label>",
-      "<label style='display:grid; grid-template-columns:30px 1fr 18px; align-items:center; column-gap:8px; margin-bottom:0; cursor:pointer;'>",
-      "<span style='display:flex; align-items:center; justify-content:center;'>",
-      "<img src='", fire_icon_url_yesterday, "' style='width:24px; height:24px;'>",
-      "</span>",
-      "<span style='font-size:15px;'>Yesterday</span>",
-      "<input type='radio' name='date_layer_choice' value='Yesterday'>",
-      "</label>",
-      "</div>"
+    legend_toggle_html <- spot_map_toggle_legend(
+      fire_icon_url_today,
+      fire_icon_url_yesterday
     )
     
     m |>
