@@ -201,26 +201,6 @@ ui <- fluidPage(
             
             uiOutput("sfog_map_loading_overlay"),
             
-          
-            actionButton(
-              "sfog_reset_map_view",
-              "Reset Map View",
-              style = "
-            position:absolute;
-            top:10px;
-            right:10px;
-            z-index:1000;
-            background:white;
-            border:2px solid rgba(0,0,0,0.2);
-            border-radius:4px;
-            padding:6px 10px;
-            font-size:13px;
-            font-weight:600;
-            cursor:pointer;
-            box-shadow:0 1px 4px rgba(0,0,0,0.3);
-          "
-            ),
-            
             leafletOutput(
               "sfog_map",
               height = "520px"
@@ -817,6 +797,10 @@ server <- function(input, output, session) {
         html = sfog_risk_legend,
         position = "bottomright",
         layerId = "sfog_legend"
+      ) |>
+      addControl(
+        html = sfog_map_reset_button(),
+        position = "topright"
       )
   })
   
@@ -1065,7 +1049,7 @@ server <- function(input, output, session) {
     )
   })
   
-  observeEvent(input$sfog_reset_map_view, {
+  observeEvent(input$sfog_reset_map_click, {
     
     selected_sfog_point(NULL)
     
