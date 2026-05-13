@@ -13,6 +13,7 @@ library(xml2)
 library(AirMonitor)
 library(terra)
 library(shinycssloaders)
+library(later)
 
 APP_MODE <- Sys.getenv("APP_MODE", unset = "dev")
 IS_DEV <- identical(APP_MODE, "dev")
@@ -192,6 +193,9 @@ ui <- fluidPage(
           div(
             style = "position:relative;",
             
+            uiOutput("sfog_map_loading_overlay"),
+            
+          
             actionButton(
               "sfog_reset_map_view",
               "Reset Map View",
@@ -451,6 +455,7 @@ server <- function(input, output, session) {
   
   sfog_cache <- reactiveVal(NULL)
   sfog_cache_status <- reactiveVal("not_loaded")
+  sfog_overlay_ready <- reactiveVal(FALSE)
   
   selected_burn_id <- reactiveVal(NULL)
   
@@ -476,6 +481,8 @@ server <- function(input, output, session) {
       !identical(sfog_cache_status(), "loaded") &&
       !identical(sfog_cache_status(), "loading")
     ) {
+      
+      sfog_overlay_ready(FALSE)
       
       message("Loading superfog visualization cache...")
       
@@ -647,6 +654,13 @@ server <- function(input, output, session) {
         east = x$sfog_png_bounds$east,
         north = x$sfog_png_bounds$north
       )
+    )
+    
+    later::later(
+      function() {
+        sfog_overlay_ready(TRUE)
+      },
+      delay = 1.5
     )
   }
   
@@ -1449,7 +1463,41 @@ server <- function(input, output, session) {
       )
     )
   })
+  
+  output$sfog_map_loading_overlay <- renderUI({
+    
+    if (identical(sfog_overlay_ready(), TRUE)) {
+      return(NULL)
+    }
+    
+    if (input$main_tabs != "Superfog Risk") {
+      return(NULL)
+    }
+    
+    htmltools::div(
+      style = "
+      position:absolute;
+      inset:0;
+      z-index:900;
+      background:rgba(255,255,255,0.82);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:18px;
+      font-weight:600;
+      color:#444;
+      border:1px solid #d9d9d9;
+    ",
+      htmltools::span(
+        class = "fa fa-spinner fa-spin",
+        style = "font-size:22px; margin-right:10px;"
+      ),
+      "Loading Superfog Risk map..."
+    )
+  })
+
 }
+
 
 # RUN APP ----------------------------------------------
 shinyApp(ui, server)
