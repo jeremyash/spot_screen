@@ -448,7 +448,7 @@ server <- function(input, output, session) {
   airnow_tomorrow_added <- reactiveVal(FALSE)
   
   sfog_cache <- reactiveVal(NULL)
-  sfog_loaded <- reactiveVal(FALSE)
+  sfog_cache_status <- reactiveVal("not_loaded")
   
   selected_burn_id <- reactiveVal(NULL)
   
@@ -468,26 +468,40 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$main_tabs, {
-    if (input$main_tabs == "Superfog Risk" && !sfog_loaded()) {
+    
+    if (
+      input$main_tabs == "Superfog Risk" &&
+      !identical(sfog_cache_status(), "loaded") &&
+      !identical(sfog_cache_status(), "loading")
+    ) {
+      
       message("Loading superfog visualization cache...")
       
-      try({
+      sfog_cache_status("loading")
+      
+      tryCatch({
         
-        sfog_cache(
-          download_sfog_cache(
-            paste0(
-              sfog_cache_url,
-              "?t=",
-              as.integer(Sys.time())
-            )
+        cache_obj <- download_sfog_cache(
+          paste0(
+            sfog_cache_url,
+            "?t=",
+            as.integer(Sys.time())
           )
         )
         
-        sfog_loaded(TRUE)
+        sfog_cache(cache_obj)
+        sfog_cache_status("loaded")
         
         message("Superfog cache loaded successfully.")
         
-      }, silent = TRUE)
+      }, error = function(e) {
+        
+        message("Superfog cache failed to load.")
+        message(e$message)
+        
+        sfog_cache(NULL)
+        sfog_cache_status("failed")
+      })
     }
   })
   
@@ -522,7 +536,7 @@ server <- function(input, output, session) {
   
   sfog_point_risk <- reactive({
     
-    req(sfog_loaded())
+    req(identical(sfog_cache_status(), "loaded"))
     
     pt_info <- selected_sfog_point()
     
@@ -612,7 +626,7 @@ server <- function(input, output, session) {
   
   # HELPER FUNCTIONS INSIDE SERVER ----
   set_sfog_overlay <- function(hour_index) {
-    req(sfog_loaded())
+    req(identical(sfog_cache_status(), "loaded"))
     
     x <- sfog_cache()
     hour_index <- as.numeric(hour_index)
@@ -941,7 +955,7 @@ server <- function(input, output, session) {
   
   observeEvent(input$sfog_hour, {
     
-    req(sfog_loaded())
+    req(identical(sfog_cache_status(), "loaded"))
     req(input$sfog_hour)
     
     set_sfog_overlay(input$sfog_hour)
@@ -949,7 +963,7 @@ server <- function(input, output, session) {
   }, ignoreInit = TRUE)
   
   observeEvent(input$sfog_map_bounds, {
-    req(sfog_loaded())
+    req(identical(sfog_cache_status(), "loaded"))
     
     selected_hour <- input$sfog_hour
     if (is.null(selected_hour)) selected_hour <- 1
@@ -1218,8 +1232,18 @@ server <- function(input, output, session) {
   
   output$sfog_status <- renderText({
     
-    if (!sfog_loaded()) {
-      return("Last refreshed: cache not loaded")
+    status <- sfog_cache_status()
+    
+    if (status == "not_loaded") {
+      return("Superfog cache not loaded")
+    }
+    
+    if (status == "loading") {
+      return("Loading superfog cache...")
+    }
+    
+    if (status == "failed") {
+      return("Superfog cache unavailable")
     }
     
     x <- sfog_cache()
@@ -1232,7 +1256,7 @@ server <- function(input, output, session) {
   
   output$sfog_time_slider <- renderUI({
     
-    req(sfog_loaded())
+    req(identical(sfog_cache_status(), "loaded"))
     
     x <- sfog_cache()
     
@@ -1254,7 +1278,7 @@ server <- function(input, output, session) {
   
   output$sfog_valid_time <- renderText({
     
-    req(sfog_loaded())
+    req(identical(sfog_cache_status(), "loaded"))
     req(input$sfog_hour)
     
     x <- sfog_cache()
