@@ -30,4 +30,7 @@ deploy_dev <- function() {
   )
 }
 
+options(rsconnect.http.timeout = 300)
+
+
 deploy_dev()
