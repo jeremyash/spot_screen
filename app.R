@@ -12,6 +12,7 @@ library(rvest)
 library(xml2)
 library(AirMonitor)
 library(terra)
+library(shinycssloaders)
 
 APP_MODE <- Sys.getenv("APP_MODE", unset = "dev")
 IS_DEV <- identical(APP_MODE, "dev")
@@ -185,6 +186,8 @@ ui <- fluidPage(
       fluidRow(
         column(
           9,
+          
+          uiOutput("sfog_loading_bar"),
           
           div(
             style = "position:relative;",
@@ -1414,6 +1417,38 @@ server <- function(input, output, session) {
     NULL
   })
   
+  output$sfog_loading_bar <- renderUI({
+    
+    status <- sfog_cache_status()
+    
+    if (status != "loading") {
+      return(NULL)
+    }
+    
+    htmltools::div(
+      style = "
+      margin-bottom:8px;
+      padding:8px 12px;
+      background:#fff7e6;
+      border:1px solid #f0ad4e;
+      border-radius:6px;
+      color:#7a4b00;
+      font-weight:600;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    ",
+      
+      htmltools::span(
+        class = "fa fa-spinner fa-spin",
+        style = "font-size:16px;"
+      ),
+      
+      htmltools::span(
+        "Loading Superfog Risk map..."
+      )
+    )
+  })
 }
 
 # RUN APP ----------------------------------------------
