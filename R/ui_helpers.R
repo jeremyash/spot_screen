@@ -46,12 +46,3 @@ sfog_legend_box <- function(label, border, bg, text) {
     )
   )
 }
-
-sfog_risk_legend <- htmltools::HTML('
-    <div style="background:white; padding:10px; border-radius:6px;">
-      <div style="font-weight:bold; margin-bottom:6px;">Superfog Risk</div>
-      <div><span style="background:#58AFDD; width:14px; height:14px; display:inline-block; border:1px solid #777;"></span> Minimal</div>
-      <div><span style="background:#FFB000; width:14px; height:14px; display:inline-block; border:1px solid #777;"></span> Moderate</div>
-      <div><span style="background:#CA0020; width:14px; height:14px; display:inline-block; border:1px solid #777;"></span> High</div>
-    </div>
-    ')
