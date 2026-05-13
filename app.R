@@ -180,8 +180,6 @@ ui <- fluidPage(
     
     # SUPERFOG RISK TAB ----
     
-    # SUPERFOG RISK TAB ----
-    
     tabPanel(
       "Superfog Risk",
       fluidRow(
@@ -294,7 +292,8 @@ ui <- fluidPage(
             br(),
             
             uiOutput("sfog_time_slider"),
-            verbatimTextOutput("sfog_status"),
+            
+            uiOutput("sfog_cache_message"),
             
             hr(),
             
@@ -1230,29 +1229,6 @@ server <- function(input, output, session) {
     )
   })
   
-  output$sfog_status <- renderText({
-    
-    status <- sfog_cache_status()
-    
-    if (status == "not_loaded") {
-      return("Superfog cache not loaded")
-    }
-    
-    if (status == "loading") {
-      return("Loading superfog cache...")
-    }
-    
-    if (status == "failed") {
-      return("Superfog cache unavailable")
-    }
-    
-    x <- sfog_cache()
-    
-    paste0(
-      "Last refreshed: ",
-      format_sfog_valid_time(x$last_refresh)
-    )
-  })
   
   output$sfog_time_slider <- renderUI({
     
@@ -1357,6 +1333,85 @@ server <- function(input, output, session) {
       format = "%m/%d\n%H:%M",
       las = 2
     )
+  })
+  
+  output$sfog_cache_message <- renderUI({
+    
+    status <- sfog_cache_status()
+    
+    if (status == "not_loaded") {
+      return(
+        div(
+          style = "
+          padding:10px;
+          margin-bottom:10px;
+          background:#f8f8f8;
+          border:1px solid #d9d9d9;
+          border-radius:6px;
+          color:#555;
+        ",
+          "Superfog cache has not loaded yet."
+        )
+      )
+    }
+    
+    if (status == "loading") {
+      return(
+        div(
+          style = "
+          padding:10px;
+          margin-bottom:10px;
+          background:#fff7e6;
+          border:1px solid #f0ad4e;
+          border-radius:6px;
+          color:#7a4b00;
+          font-weight:600;
+        ",
+          "Loading superfog cache..."
+        )
+      )
+    }
+    
+    if (status == "failed") {
+      return(
+        div(
+          style = "
+          padding:10px;
+          margin-bottom:10px;
+          background:#ffecec;
+          border:1px solid #cc0000;
+          border-radius:6px;
+          color:#7a0000;
+          font-weight:600;
+        ",
+          "Superfog cache unavailable. Try refreshing the app later."
+        )
+      )
+    }
+    
+    if (status == "loaded") {
+      x <- sfog_cache()
+      
+      return(
+        div(
+          style = "
+        padding:8px 10px;
+        margin-bottom:10px;
+        background:#eef8ee;
+        border:1px solid #7fbf7f;
+        border-radius:6px;
+        color:#225522;
+        font-size:13px;
+      ",
+          paste0(
+            "Superfog cache loaded. Last refreshed: ",
+            format_sfog_valid_time(x$last_refresh)
+          )
+        )
+      )
+    }
+    
+    NULL
   })
   
 }
