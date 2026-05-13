@@ -662,7 +662,6 @@ server <- function(input, output, session) {
     )
   })
   
-  
   # HELPER FUNCTIONS INSIDE SERVER ----
   set_sfog_overlay <- function(hour_index) {
     req(sfog_loaded())
@@ -1412,7 +1411,4 @@ server <- function(input, output, session) {
 }
 
 # RUN APP ----------------------------------------------
-
-code
-
 shinyApp(ui, server)
