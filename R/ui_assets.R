@@ -54,6 +54,10 @@ spot_map_controls_js <- function() {
       Shiny.setInputValue('reset_map_click', Math.random());
     });
 
+    $(document).on('click', '#sfog_reset_map', function () {
+      Shiny.setInputValue('sfog_reset_map_click', Math.random());
+    });
+
     $(document).on('change', 'input[name=\"date_layer_choice\"]', function () {
       Shiny.setInputValue('map_layer_choice', $(this).val(), {priority: 'event'});
     });
@@ -113,7 +117,6 @@ spot_map_reset_button <- function() {
   "
 }
 
-
 sfog_risk_legend <- htmltools::HTML('
     <div style="background:white; padding:10px; border-radius:6px;">
       <div style="font-weight:bold; margin-bottom:6px;">Superfog Risk</div>
@@ -122,3 +125,19 @@ sfog_risk_legend <- htmltools::HTML('
       <div><span style="background:#CA0020; width:14px; height:14px; display:inline-block; border:1px solid #777;"></span> High</div>
     </div>
     ')
+
+sfog_map_reset_button <- function() {
+  "
+  <button id='sfog_reset_map' 
+    style='
+      background:white;
+      border:1px solid #999;
+      padding:6px 10px;
+      font-weight:bold;
+      border-radius:4px;
+      cursor:pointer;
+    '>
+    Reset Map View
+  </button>
+  "
+}
