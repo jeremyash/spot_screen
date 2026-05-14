@@ -68,7 +68,7 @@ download_sfog_extract_cache <- function(url) {
   obj <- readRDS(tf)
   
   required_objects <- c(
-    "sfog_ll",
+    "sfog_extract_df",
     "valid_times",
     "last_refresh"
   )

@@ -561,43 +561,30 @@ server <- function(input, output, session) {
     )
     
     x <- sfog_extract_cache()
+
     
-    if (inherits(x$sfog_ll, "PackedSpatRaster")) {
-      x$sfog_ll <- terra::unwrap(x$sfog_ll)
-      sfog_extract_cache(x)
-    }
+    df_extract <- x$sfog_extract_df
     
-    pt <- data.frame(
-      lon = lon,
-      lat = lat
-    )
+    dist_sq <- (df_extract$lon - lon)^2 +
+      (df_extract$lat - lat)^2
     
-    pt_v <- terra::vect(
-      pt,
-      geom = c("lon", "lat"),
-      crs = "EPSG:4326"
-    )
+    nearest_index <- which.min(dist_sq)
     
-    inside_domain <- !is.na(
-      terra::extract(
-        x$sfog_ll[[1]],
-        pt_v
-      )[1, 2]
-    )
+    nearest_row <- df_extract[nearest_index, ]
+    
+    distance_deg <- sqrt(min(dist_sq))
     
     shiny::validate(
       shiny::need(
-        inside_domain,
+        distance_deg < 0.25,
         "Location is outside of the Southern Area."
       )
     )
     
-    vals <- terra::extract(
-      x$sfog_ll,
-      pt_v
-    )
-    
-    risk_vals <- as.numeric(vals[1, -1])
+    risk_vals <- nearest_row |>
+      dplyr::select(-cell, -lon, -lat) |>
+      unlist(use.names = FALSE) |>
+      as.numeric()
     
     leafletProxy("sfog_map") |>
       clearGroup("Point Query") |>
