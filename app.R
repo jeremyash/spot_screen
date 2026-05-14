@@ -94,9 +94,9 @@ ui <- fluidPage(
   
   titlePanel(
     if (IS_DEV) {
-      "USFS Region 8 Superfog Screener Pilot — DEV"
+      "USFS Southern Area Superfog Screener Pilot — DEV"
     } else {
-      "USFS Region 8 Superfog Screener Pilot"
+      "USFS Southern Area Superfog Screener Pilot"
     }
   ),
   
@@ -227,8 +227,6 @@ ui <- fluidPage(
           overflow-y:auto;
         ",
             
-            h3("Superfog Risk"),
-            
             fluidRow(
               column(
                 width = 2,
@@ -329,7 +327,19 @@ ui <- fluidPage(
         
         h2("About the Spot Forecast Screening"),
         
-        p("This tool filters the available NWS Spot Weather forecasts to those occurring on US Forest Service Region 8 National Forest System units."),
+        p("This tool filters the available NWS Spot Weather forecasts to those occurring on US Forest Service Southern Area National Forest System units."),
+        
+        p(HTML(
+          "The <strong>Spot Map</strong> tab provides a spatial overview of active spot forecasts issued for Southern Area units, while the <strong>Spot Table</strong> tab organizes the same forecasts by National Forest for easier review and navigation."
+        )),
+        
+        p(
+          "Forecasts issued today are displayed separately from forecasts issued yesterday, allowing users to quickly identify newly issued spot forecasts while still maintaining visibility of recent forecast activity."
+        ),
+        
+        p(
+          "Selecting a burn unit from either the map or table displays the associated superfog screening results and highlights forecast periods where nighttime smoke and fog concerns may be elevated."
+        ),
         
         p(
           HTML('Using the <a href="https://usdagcc.sharepoint.com/sites/fs-r08-sm/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Ffs%2Dr08%2Dsm%2FShared%20Documents%2FGeneral%2FGuidance%20and%20Forms%2FR8%20Smoke%20Management%20Guidelines%20%28March%202022%29%2Epdf&parent=%2Fsites%2Ffs%2Dr08%2Dsm%2FShared%20Documents%2FGeneral%2FGuidance%20and%20Forms&p=true&ga=1" target="_blank">R8 Smoke Management Guidelines</a>, each spot forecast is screened to identify weather conditions that may increase the likelihood of <strong>superfog formation</strong>. When these conditions occur, it is necessary to run a nighttime smoke dispersion model using <a href="https://piedmont.dri.edu/" target="_blank">PB Piedmont</a>.')
@@ -412,13 +422,6 @@ ui <- fluidPage(
           HTML('The data is set to refresh every 30 minutes, so it may take up to 30 minutes from the time your forecast is generated to display on this site. If your forecast is still not displaying on the map, visit the <a href="https://spot.weather.gov/" target="_blank">NWS Spot Forecast</a> page and conduct a manual screening using the thresholds outlined above.')
         ),
         
-        br(),
-        
-        h3("Additional Resources"),
-        
-        p(
-          HTML('For more information and additional smoke management resources, please visit the <a href="https://usdagcc.sharepoint.com/sites/fs-r08-sm" target="_blank">USFS Region 8 Smoke Management Site</a>.')
-        ),
         
         br(),
         
@@ -494,6 +497,14 @@ ui <- fluidPage(
         
         p(
           HTML('This visualization is intended as a situational awareness and planning aid and should not replace NWS Spot Forecasts.')
+        ), 
+       
+        br(),
+        
+        h3("Additional Resources"),
+        
+        p(
+          HTML('For more information and additional smoke management resources, please visit the <a href="https://usdagcc.sharepoint.com/sites/fs-r08-sm" target="_blank">USFS Southern Area Smoke Management Site</a>.')
         )
       )
     )
@@ -1073,7 +1084,7 @@ server <- function(input, output, session) {
       function() {
         spot_map_ready(TRUE)
       },
-      delay = 1.25
+      delay = 0.75
     )
   }, once = TRUE)
   
@@ -1331,9 +1342,9 @@ server <- function(input, output, session) {
     has_active_layer <- any(df$issued == active_layer, na.rm = TRUE)
     
     prompt_text <- if (!has_active_layer && active_layer == "Today") {
-      "There are no spot forecasts issued for USFS Region 8 units today."
+      "There are no spot forecasts issued for USFS Southern Area units today."
     } else if (!has_active_layer && active_layer == "Yesterday") {
-      "There were no spot forecasts issued for USFS Region 8 units yesterday."
+      "There were no spot forecasts issued for USFS Southern Area units yesterday."
     } else {
       "Click a fire icon on the map to view superfog screening results."
     }
@@ -1352,9 +1363,9 @@ server <- function(input, output, session) {
     has_yesterday <- any(df$issued == "Yesterday", na.rm = TRUE)
     
     prompt_text <- if (!has_today) {
-      "There are no spot forecasts issued for USFS Region 8 units today."
+      "There are no spot forecasts issued for USFS Southern Area units today."
     } else if (!has_yesterday) {
-      "There were no spot forecasts issued for USFS Region 8 units yesterday."
+      "There were no spot forecasts issued for USFS Southern Area units yesterday."
     } else {
       "Click a burn unit in the table to view superfog screening results."
     }
