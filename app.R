@@ -42,8 +42,9 @@ r8_forests$forest_id <- seq_len(nrow(r8_forests))
 
 cache_url <- "https://raw.githubusercontent.com/jeremyash/spot_screen/cache-data/cache/superfog_cache.rds"
 
-sfog_cache_url <- "https://raw.githubusercontent.com/jeremyash/sfog_vis/cache-data/cache/ndfd_superfog_cache.rds"
+sfog_display_cache_url <- "https://raw.githubusercontent.com/jeremyash/sfog_vis/cache-data/cache/ndfd_superfog_display_cache.rds"
 
+sfog_extract_cache_url <- "https://raw.githubusercontent.com/jeremyash/sfog_vis/cache-data/cache/ndfd_superfog_extract_cache.rds"
 
 
 # INITIAL CACHE LOAD ----------------------------------------------
@@ -471,15 +472,15 @@ server <- function(input, output, session) {
       
       sfog_overlay_ready(FALSE)
       
-      message("Loading superfog visualization cache...")
+      message("Loading superfog display cache...")
       
       sfog_cache_status("loading")
       
       tryCatch({
         
-        cache_obj <- download_sfog_cache(
+        cache_obj <- download_sfog_display_cache(
           paste0(
-            sfog_cache_url,
+            sfog_display_cache_url,
             "?t=",
             as.integer(Sys.time())
           )
@@ -488,11 +489,11 @@ server <- function(input, output, session) {
         sfog_cache(cache_obj)
         sfog_cache_status("loaded")
         
-        message("Superfog cache loaded successfully.")
+        message("Superfog display cache loaded successfully.")
         
       }, error = function(e) {
         
-        message("Superfog cache failed to load.")
+        message("Superfog display cache failed to load.")
         message(e$message)
         
         sfog_cache(NULL)
@@ -532,7 +533,11 @@ server <- function(input, output, session) {
   
   sfog_point_risk <- reactive({
     
-    req(identical(sfog_cache_status(), "loaded"))
+    shiny::validate(
+      shiny::need(FALSE, "Point extraction will be re-enabled after the extraction cache is wired in.")
+    )
+    
+    # req(identical(sfog_cache_status(), "loaded"))
     
     pt_info <- selected_sfog_point()
     
@@ -627,19 +632,20 @@ server <- function(input, output, session) {
     x <- sfog_cache()
     hour_index <- as.numeric(hour_index)
     
-    req(!is.null(x$sfog_png_urls))
-    req(!is.null(x$sfog_png_bounds))
+    req(!is.null(x$overlay_info))
     req(hour_index >= 1)
-    req(hour_index <= length(x$sfog_png_urls))
+    req(hour_index <= nrow(x$overlay_info))
+    
+    overlay_row <- x$overlay_info[hour_index, ]
     
     session$sendCustomMessage(
       type = "sfog_set_overlay",
       message = list(
-        url = x$sfog_png_urls[[hour_index]],
-        west = x$sfog_png_bounds$west,
-        south = x$sfog_png_bounds$south,
-        east = x$sfog_png_bounds$east,
-        north = x$sfog_png_bounds$north
+        url = overlay_row$png_url,
+        west = overlay_row$west,
+        south = overlay_row$south,
+        east = overlay_row$east,
+        north = overlay_row$north
       )
     )
     

@@ -1,4 +1,4 @@
-download_sfog_cache <- function(url) {
+download_sfog_display_cache <- function(url) {
   
   tf <- tempfile(fileext = ".rds")
   
@@ -13,8 +13,8 @@ download_sfog_cache <- function(url) {
   
   obj <- readRDS(tf)
   
-  required_objects <- c(
-    "sfog_ll",
+  required_names <- c(
+    "overlay_info",
     "valid_times",
     "last_refresh"
   )
@@ -24,14 +24,10 @@ download_sfog_cache <- function(url) {
   if (length(missing_objects) > 0) {
     stop(
       paste(
-        "Missing objects in superfog cache:",
+        "Missing objects in superfog display cache:",
         paste(missing_objects, collapse = ", ")
       )
     )
-  }
-  
-  if (inherits(obj$sfog_ll, "PackedSpatRaster")) {
-    obj$sfog_ll <- terra::unwrap(obj$sfog_ll)
   }
   
   obj
