@@ -997,7 +997,7 @@ server <- function(input, output, session) {
       function() {
         spot_map_ready(TRUE)
       },
-      delay = 2
+      delay = 1.25
     )
   }, once = TRUE)
   
