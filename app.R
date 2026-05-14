@@ -327,7 +327,7 @@ ui <- fluidPage(
       div(
         style = "max-width:950px; margin:auto; font-size:16px; line-height:1.7;",
         
-        h2("About This Tool"),
+        h2("About the Spot Forecast Screening"),
         
         p("This tool filters the available NWS Spot Weather forecasts to those occurring on US Forest Service Region 8 National Forest System units."),
         
@@ -409,7 +409,7 @@ ui <- fluidPage(
         h3("Update Cycle"),
         
         p(
-          HTML('The data is set to refresh every 30 minutes, so it may take up to 30 minutes from the time your forecast is generated to display on this site. If your forecast is still not diisplaying on the map, visit the <a href="https://spot.weather.gov/" target="_blank">NWS Spot Forecast</a> page and conduct a manual screening using the thresholds outlined above.')
+          HTML('The data is set to refresh every 30 minutes, so it may take up to 30 minutes from the time your forecast is generated to display on this site. If your forecast is still not displaying on the map, visit the <a href="https://spot.weather.gov/" target="_blank">NWS Spot Forecast</a> page and conduct a manual screening using the thresholds outlined above.')
         ),
         
         br(),
@@ -418,6 +418,82 @@ ui <- fluidPage(
         
         p(
           HTML('For more information and additional smoke management resources, please visit the <a href="https://usdagcc.sharepoint.com/sites/fs-r08-sm" target="_blank">USFS Region 8 Smoke Management Site</a>.')
+        ),
+        
+        br(),
+        
+        hr(style = "margin-top:40px; margin-bottom:40px;"),
+        
+        h2("About the Superfog Risk Visualization"),
+        
+        p(
+          HTML('The <strong>Superfog Risk</strong> tab provides an experimental regional visualization of hourly superfog risk conditions across the Southern Area using forecast data from the <a href="https://vlab.noaa.gov/web/mdl/ndfd" target="_blank">National Digital Forecast Database (NDFD)</a>.')
+        ),
+        
+        p(
+          "Unlike the Spot Map and Spot Table tabs, which screen individual NWS Spot Weather Forecasts, the Superfog Risk tab uses gridded forecast data to visualize the broader spatial distribution of nighttime superfog risk."
+        ),
+        
+        p(
+          "The visualization evaluates hourly forecast conditions using the same four screening variables applied in the spot forecast screening process:"
+        ),
+        
+        tags$ul(
+          tags$li("Temperature"),
+          tags$li("Relative Humidity"),
+          tags$li("Surface Wind Speed"),
+          tags$li("Cloud Cover")
+        ),
+        
+        p(
+          "Each hourly grid cell is categorized into one of three superfog risk levels:"
+        ),
+        
+        div(
+          style = "
+    max-width:750px;
+    margin:auto;
+    padding:18px;
+    border-radius:8px;
+    background:#ffffff;
+    box-shadow:0 0 8px rgba(0,0,0,0.08);
+  ",
+          
+          h3(
+            style = "margin-top:0; margin-bottom:15px;",
+            "Superfog Risk Categories"
+          ),
+          
+          sfog_legend_box(
+            "High Risk",
+            "#CA0020",
+            "#FFDADA",
+            "Most or all screening variables meet Critical thresholds"
+          ),
+          
+          sfog_legend_box(
+            "Moderate Risk",
+            "#FFB000",
+            "#FFE8CC",
+            "Multiple variables meet Watch Out or Critical thresholds"
+          ),
+          
+          sfog_legend_box(
+            "Minimal Risk",
+            "#58AFDD",
+            "#DCEEFF",
+            "Few or no variables meet superfog screening thresholds"
+          )
+        ),
+        
+        br(),
+        
+        p(
+          "The map updates every 30 minutes and displays hourly forecast guidance for the next several days. Users may click the map or manually enter latitude/longitude coordinates to generate a point-based superfog risk time series."
+        ),
+        
+        p(
+          HTML('This visualization is intended as a situational awareness and planning aid and should not replace NWS Spot Forecasts.')
         )
       )
     )
