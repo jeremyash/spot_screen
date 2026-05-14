@@ -13,7 +13,7 @@ download_sfog_display_cache <- function(url) {
   
   obj <- readRDS(tf)
   
-  required_names <- c(
+  required_objects <- c(
     "overlay_info",
     "valid_times",
     "last_refresh"
@@ -51,3 +51,40 @@ format_sfog_valid_time <- function(x) {
     "%b %d, %Y %I:%M %p %Z"
   )
 }
+
+download_sfog_extract_cache <- function(url) {
+  
+  tf <- tempfile(fileext = ".rds")
+  
+  on.exit(unlink(tf), add = TRUE)
+  
+  utils::download.file(
+    url = url,
+    destfile = tf,
+    mode = "wb",
+    quiet = TRUE
+  )
+  
+  obj <- readRDS(tf)
+  
+  required_objects <- c(
+    "sfog_ll",
+    "valid_times",
+    "last_refresh"
+  )
+  
+  missing_objects <- setdiff(required_objects, names(obj))
+  
+  if (length(missing_objects) > 0) {
+    stop(
+      paste(
+        "Missing objects in superfog extraction cache:",
+        paste(missing_objects, collapse = ", ")
+      )
+    )
+  }
+  
+  obj
+}
+
+

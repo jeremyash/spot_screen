@@ -443,6 +443,10 @@ server <- function(input, output, session) {
   
   sfog_cache <- reactiveVal(NULL)
   sfog_cache_status <- reactiveVal("not_loaded")
+  
+  sfog_extract_cache <- reactiveVal(NULL)
+  sfog_extract_status <- reactiveVal("not_loaded")
+  
   sfog_overlay_ready <- reactiveVal(FALSE)
   
   selected_burn_id <- reactiveVal(NULL)
@@ -533,11 +537,7 @@ server <- function(input, output, session) {
   
   sfog_point_risk <- reactive({
     
-    shiny::validate(
-      shiny::need(FALSE, "Point extraction will be re-enabled after the extraction cache is wired in.")
-    )
-    
-    # req(identical(sfog_cache_status(), "loaded"))
+    req(identical(sfog_cache_status(), "loaded"))
     
     pt_info <- selected_sfog_point()
     
@@ -551,7 +551,21 @@ server <- function(input, output, session) {
       shiny::need(!is.na(lon), "Please enter a valid longitude.")
     )
     
-    x <- sfog_cache()
+    cache_ready <- load_sfog_extract_cache_if_needed()
+    
+    shiny::validate(
+      shiny::need(
+        cache_ready,
+        "Superfog extraction cache is loading or unavailable. Try again in a moment."
+      )
+    )
+    
+    x <- sfog_extract_cache()
+    
+    if (inherits(x$sfog_ll, "PackedSpatRaster")) {
+      x$sfog_ll <- terra::unwrap(x$sfog_ll)
+      sfog_extract_cache(x)
+    }
     
     pt <- data.frame(
       lon = lon,
@@ -611,7 +625,7 @@ server <- function(input, output, session) {
         lat2 = lat + 0.5
       )
     
-    valid_times <- get_sfog_valid_times(x)
+    valid_times <- x$valid_times
     
     data.frame(
       time_utc = valid_times,
@@ -655,6 +669,45 @@ server <- function(input, output, session) {
       },
       delay = 1.5
     )
+  }
+  
+  load_sfog_extract_cache_if_needed <- function() {
+    
+    if (identical(sfog_extract_status(), "loaded")) {
+      return(TRUE)
+    }
+    
+    if (identical(sfog_extract_status(), "loading")) {
+      return(FALSE)
+    }
+    
+    sfog_extract_status("loading")
+    
+    tryCatch({
+      
+      cache_obj <- download_sfog_extract_cache(
+        paste0(
+          sfog_extract_cache_url,
+          "?t=",
+          as.integer(Sys.time())
+        )
+      )
+      
+      sfog_extract_cache(cache_obj)
+      sfog_extract_status("loaded")
+      
+      TRUE
+      
+    }, error = function(e) {
+      
+      message("Superfog extraction cache failed to load.")
+      message(e$message)
+      
+      sfog_extract_cache(NULL)
+      sfog_extract_status("failed")
+      
+      FALSE
+    })
   }
   
   # TEXT OUTPUTS --------------------------------------------------------
