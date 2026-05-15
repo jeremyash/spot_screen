@@ -309,15 +309,11 @@ ui <- fluidPage(
               div(
                 style = "
                   width:100%;
-                  display:flex;
-                  justify-content:center;
                   margin-top:10px;
                   margin-bottom:10px;
                 ",
-                div(
-                  style = "width:95%;",
-                  uiOutput("sfog_time_slider")
-                )
+                
+                uiOutput("sfog_time_slider")
               ),
               
               uiOutput("sfog_cache_message")

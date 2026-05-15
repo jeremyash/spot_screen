@@ -359,6 +359,8 @@ app_theme_css <- function() {
       );
       
       padding: 16px 22px;
+      
+      margin-top: 8px;
       margin-bottom: 16px;
       
       border-radius: 12px;
