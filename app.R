@@ -445,13 +445,10 @@ ui <- fluidPage(
         br(),
         
         div(
+          class = "sa-card",
           style = "
             max-width:750px;
             margin:auto;
-            padding:18px;
-            border-radius:8px;
-            background:#ffffff;
-            box-shadow:0 0 8px rgba(0,0,0,0.08);
           ",
           h3(style = "margin-top:0; margin-bottom:15px;", "PB Piedmont Decision Guide"),
           sfog_legend_box("PB Piedmont Required", "red", "#FFDADA", "All variables in Critical or Watch Out"),
@@ -503,15 +500,12 @@ ui <- fluidPage(
         ),
         
         div(
+          class = "sa-card",
           style = "
-    max-width:750px;
-    margin:auto;
-    padding:18px;
-    border-radius:8px;
-    background:#ffffff;
-    box-shadow:0 0 8px rgba(0,0,0,0.08);
-  ",
-          
+            max-width:750px;
+            margin:auto;
+          ",
+                    
           h3(
             style = "margin-top:0; margin-bottom:15px;",
             "Superfog Risk Categories"
