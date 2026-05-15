@@ -1052,14 +1052,7 @@ server <- function(input, output, session) {
       hideGroup("Yesterday") |>
       hideGroup("AQI Forecast Today") |>
       hideGroup("AQI Forecast Tomorrow")
-    
-    later::later(
-      function() {
-        spot_base_map_ready(TRUE)
-      },
-      delay = 0.75
-    )
-  }, once = TRUE)
+
   
   observeEvent(cache_data(), {
     
