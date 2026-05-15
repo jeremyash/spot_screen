@@ -127,28 +127,33 @@ ui <- fluidPage(
             
           ),
           div(
+            class = "sa-card",
             style = "
               margin-top:10px;
-              padding:10px 12px;
-              background:#f8f8f8;
-              border:1px solid #d9d9d9;
-              border-radius:6px;
-              font-size:14px;
-              color:#666;
+              padding-top:10px;
+              padding-bottom:10px;
             ",
-            textOutput("last_refresh_text")
+            
+            div(
+              style = "
+                font-size:14px;
+                color:#555555;
+                font-weight:500;
+              ",
+              textOutput("last_refresh_text")
+            )
           )
         ),
         column(
           4,
           div(
             style = "
-      height:650px;
-      overflow-y:auto;
-      border-left:1px solid #d9d9d9;
-      padding-left:15px;
-      padding-right:10px;
-    ",
+              height:650px;
+              overflow-y:auto;
+              background:#f7f9fb;
+              padding:15px;
+              border-radius:10px;
+            ",
             
             div(
               class = "sa-card",
@@ -186,11 +191,16 @@ ui <- fluidPage(
             style = "
               height:650px;
               overflow-y:auto;
-              border-left:1px solid #d9d9d9;
-              padding-left:15px;
-              padding-right:10px;
+              background:#f7f9fb;
+              padding:15px;
+              border-radius:10px;
             ",
-            uiOutput("selected_info_table")
+            
+            div(
+              class = "sa-card",
+              
+              uiOutput("selected_info_table")
+            )
           )
         )
       )
@@ -231,11 +241,12 @@ ui <- fluidPage(
           3,
           div(
             style = "
-          padding:15px;
-          border-left:1px solid #d9d9d9;
-          height:700px;
-          overflow-y:auto;
-        ",
+              background:#f7f9fb;
+              padding:15px;
+              border-radius:10px;
+              height:700px;
+              overflow-y:auto;
+            ",
             
             div(
               class = "sa-time-card",
@@ -340,7 +351,8 @@ ui <- fluidPage(
               actionButton(
                 "sfog_extract_point",
                 "Plot Point Risk",
-                width = "100%"
+                width = "100%",
+                class = "sa-primary-btn"
               )
             )
           )
@@ -355,6 +367,8 @@ ui <- fluidPage(
       "About",
       div(
         style = "max-width:950px; margin:auto; font-size:16px; line-height:1.7;",
+        div(
+          class = "sa-card",
         
         h2("About the Spot Forecast Screening"),
         
@@ -456,7 +470,12 @@ ui <- fluidPage(
         
         br(),
         
+        ),
+        
         hr(style = "margin-top:40px; margin-bottom:40px;"),
+        
+        div(
+          class = "sa-card",
         
         h2("About the Superfog Risk Visualization"),
         
@@ -540,6 +559,7 @@ ui <- fluidPage(
       )
     )
   )
+)
 )
 
 

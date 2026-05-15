@@ -103,14 +103,13 @@ spot_map_toggle_legend <- function(
 spot_map_reset_button <- function() {
   
   "
-  <button id='reset_map' 
+  <button
+    id='reset_map'
+    class='sa-primary-btn'
     style='
-      background:white;
-      border:1px solid #999;
-      padding:6px 10px;
-      font-weight:bold;
-      border-radius:4px;
+      padding:6px 12px;
       cursor:pointer;
+      box-shadow:0 1px 4px rgba(0,0,0,0.25);
     '>
     Reset Map View
   </button>
@@ -128,14 +127,13 @@ sfog_risk_legend <- htmltools::HTML('
 
 sfog_map_reset_button <- function() {
   "
-  <button id='sfog_reset_map' 
+  <button
+    id='reset_map'
+    class='sa-primary-btn'
     style='
-      background:white;
-      border:1px solid #999;
-      padding:6px 10px;
-      font-weight:bold;
-      border-radius:4px;
+      padding:6px 12px;
       cursor:pointer;
+      box-shadow:0 1px 4px rgba(0,0,0,0.25);
     '>
     Reset Map View
   </button>
@@ -177,16 +175,17 @@ app_theme_css <- function() {
     }
 
     .sa-card-title {
-      font-size: 17px;
+      font-size: 18px;
       font-weight: 700;
-      color: #1f3b1f;
-      margin-bottom: 8px;
+      color: #243447;
+      margin-bottom: 10px;
+      letter-spacing: 0.01em;
     }
 
     .sa-muted {
-      color: #666666;
+      color: #5f6b7a;
       font-size: 14px;
-      line-height: 1.45;
+      line-height: 1.5;
     }
 
     .sa-section-accent {
@@ -217,6 +216,55 @@ app_theme_css <- function() {
       text-transform: uppercase;
       letter-spacing: 0.04em;
       margin-bottom: 6px;
+    }
+    
+    .btn-default, .btn {
+      border-radius: 8px;
+      font-weight: 600;
+    }
+
+    .sa-primary-btn {
+      background: #2b2f36 !important;
+      color: white !important;
+      border: 1px solid #1f2328 !important;
+      border-radius: 8px !important;
+      font-weight: 700 !important;
+    }
+
+    .sa-primary-btn:hover {
+      background: #1f2328 !important;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont,
+        'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+    
+    .form-control {
+      border-radius: 8px !important;
+      border: 1px solid #cfd8e3 !important;
+      box-shadow: none !important;
+    }
+
+    .form-control:focus {
+      border-color: #5b7ea6 !important;
+      box-shadow: 0 0 0 2px rgba(91,126,166,0.15) !important;
+    }
+    
+    .irs-bar,
+    .irs-bar-edge,
+    .irs-single {
+      background: #2b2f36 !important;
+      border-color: #2b2f36 !important;
+    }
+    
+    .irs-slider {
+      border: 2px solid #2b2f36 !important;
+      background: white !important;
+    }
+    
+    .radio label {
+      font-weight: 600;
     }
   "))
 }
