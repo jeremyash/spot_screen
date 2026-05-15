@@ -87,4 +87,33 @@ download_sfog_extract_cache <- function(url) {
   obj
 }
 
+lookup_point_tz <- function(lat, lon, default_tz = "America/New_York") {
+  
+  if (is.na(lat) || is.na(lon)) {
+    return(default_tz)
+  }
+  
+  tz <- tryCatch(
+    lutz::tz_lookup_coords(
+      lat = lat,
+      lon = lon,
+      method = "fast",
+      warn = FALSE
+    ),
+    error = function(e) default_tz
+  )
+  
+  if (is.na(tz) || is.null(tz)) {
+    default_tz
+  } else {
+    tz
+  }
+}
+
+format_time_local <- function(time, tz, fmt = "%b %d, %Y %I:%M %p %Z") {
+  format(
+    lubridate::with_tz(time, tz),
+    fmt
+  )
+}
 
