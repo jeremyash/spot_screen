@@ -8,15 +8,12 @@ build_selected_info <- function(
   if (base::is.null(clicked_id)) {
     return(
       htmltools::div(
-        style = "
-        padding:18px;
-        border:2px dashed #cccccc;
-        background:#f9f9f9;
-        text-align:center;
-        font-size:18px;
-        border-radius:8px;
-      ",
-        prompt_text
+        class = "sa-empty-state sa-fade-in",
+        
+        htmltools::div(
+          class = "sa-empty-state-text",
+          prompt_text
+        )
       )
     )
   }

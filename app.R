@@ -218,7 +218,7 @@ ui <- fluidPage(
       "Superfog Risk",
       fluidRow(
         column(
-          9,
+          8,
           
           uiOutput("sfog_loading_bar"),
           
@@ -237,7 +237,7 @@ ui <- fluidPage(
         ),
         
         column(
-          3,
+          4,
           div(
             style = "
               background:#f7f9fb;
@@ -275,14 +275,14 @@ ui <- fluidPage(
                   width = 8,
                   div(
                     style = "
-                  display:flex;
-                  align-items:center;
-                  justify-content:center;
-                  height:38px;
-                  font-weight:bold;
-                  font-size:18px;
-                  text-align:center;
-                ",
+                      display:flex;
+                      align-items:center;
+                      justify-content:center;
+                      height:38px;
+                      font-weight:bold;
+                      font-size:18px;
+                      text-align:center;
+                    ",
                     textOutput("sfog_valid_time")
                   )
                 ),
@@ -308,12 +308,12 @@ ui <- fluidPage(
               
               div(
                 style = "
-              width:100%;
-              display:flex;
-              justify-content:center;
-              margin-top:10px;
-              margin-bottom:10px;
-            ",
+                  width:100%;
+                  display:flex;
+                  justify-content:center;
+                  margin-top:10px;
+                  margin-bottom:10px;
+                ",
                 div(
                   style = "width:95%;",
                   uiOutput("sfog_time_slider")
@@ -1102,7 +1102,7 @@ server <- function(input, output, session) {
       
       plotOutput(
         "sfog_point_risk_plot",
-        height = "250px"
+        height = "290px"
       )
     )
   })
@@ -1724,7 +1724,7 @@ server <- function(input, output, session) {
     point_cols <- risk_colors[as.character(df$risk)]
     
     par(
-      mar = c(5.5, 6.5, 3.5, 2) + 0.1,
+      mar = c(6.2, 8.2, 3.5, 2) + 0.1,
       bg = "white",
       family = "sans",
       xpd = FALSE
@@ -1802,8 +1802,9 @@ server <- function(input, output, session) {
       labels = c("Minimal", "Moderate", "High"),
       las = 1,
       tick = FALSE,
-      cex.axis = 0.95,
-      col.axis = "#243447"
+      cex.axis = 1.05,
+      font.axis = 2,
+      col.axis = "#1f2933"
     )
     
     axis_times <- df$time_et
@@ -1822,7 +1823,7 @@ server <- function(input, output, session) {
       format = "%m/%d\n%H:%M",
       las = 2,
       cex.axis = 0.8,
-      col.axis = "#5f6b7a"
+      col.axis = "#344054"
     )
     
     title(
@@ -1838,6 +1839,7 @@ server <- function(input, output, session) {
       col.main = "#243447"
     )
   })
+  
   output$sfog_cache_message <- renderUI({
     
     status <- sfog_cache_status()
