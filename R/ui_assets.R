@@ -142,24 +142,42 @@ sfog_map_reset_button <- function() {
 
 map_loading_overlay <- function(message) {
   htmltools::div(
+    class = "sa-fade-in",
     style = "
       position:absolute;
-      inset:0;
-      z-index:900;
-      background:rgba(255,255,255,0.82);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:18px;
-      font-weight:600;
-      color:#444;
-      border:1px solid #d9d9d9;
+      top:50%;
+      left:50%;
+      transform:translate(-50%, -50%);
+      z-index:2000;
+      background:rgba(255,255,255,0.92);
+      backdrop-filter:blur(4px);
+      padding:18px 26px;
+      border-radius:12px;
+      box-shadow:0 4px 18px rgba(0,0,0,0.12);
+      text-align:center;
+      min-width:220px;
     ",
-    htmltools::span(
-      class = "fa fa-spinner fa-spin",
-      style = "font-size:22px; margin-right:10px;"
-    ),
-    message
+    htmltools::div(
+      
+      htmltools::span(
+        class = "fa fa-spinner fa-spin",
+        style = "
+      font-size:24px;
+      color:#2b2f36;
+    "
+      ),
+      
+      htmltools::div(
+        style = "
+      font-size:16px;
+      font-weight:700;
+      color:#243447;
+      margin-top:10px;
+      letter-spacing:0.01em;
+    ",
+        message
+      )
+    )
   )
 }
 
@@ -273,6 +291,132 @@ app_theme_css <- function() {
     
     .radio label {
       font-weight: 600;
+    }
+    
+    .sa-fade-in {
+      animation: saFadeIn 0.22s ease-out;
+    }
+
+    @keyframes saFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+    
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .sa-header {
+      background: linear-gradient(
+        135deg,
+        #243447 0%,
+        #2b2f36 100%
+      );
+      
+      padding: 16px 22px;
+      margin-bottom: 16px;
+      
+      border-radius: 12px;
+      
+      box-shadow:
+        0 3px 14px rgba(0,0,0,0.12);
+    }
+
+    .sa-header-title {
+      color: white;
+      font-size: 30px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+    }
+    
+    .nav-tabs {
+  border-bottom: 2px solid #d7dee7 !important;
+  margin-bottom: 18px;
+  padding-left: 4px;
+}
+
+.nav-tabs > li {
+  margin-bottom: -2px;
+}
+
+.nav-tabs > li > a {
+  border: 1px solid transparent !important;
+  border-radius: 10px 10px 0 0 !important;
+  
+  background: #eef2f6 !important;
+  color: #4c5a6a !important;
+  
+  font-weight: 700;
+  font-size: 15px;
+  
+  padding: 11px 20px;
+  margin-right: 6px;
+  
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.nav-tabs > li > a:hover {
+  background: #e3e9ef !important;
+  color: #243447 !important;
+}
+
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus {
+  
+  background: white !important;
+  color: #243447 !important;
+  
+  border: 2px solid #243447 !important;
+  border-bottom: 2px solid white !important;
+  
+  box-shadow: none !important;
+}
+    
+    .leaflet-control-zoom a {
+      background: white !important;
+      color: #243447 !important;
+      border: none !important;
+      
+      box-shadow:
+        0 2px 8px rgba(0,0,0,0.12);
+        
+      font-weight: 700;
+    }
+
+    .leaflet-control-zoom a:hover {
+      background: #f3f5f7 !important;
+    }
+    
+    .leaflet-control-layers {
+      border: none !important;
+      
+      border-radius: 10px !important;
+      
+      box-shadow:
+        0 3px 12px rgba(0,0,0,0.14) !important;
+        
+      overflow: hidden;
+    }
+    
+    .leaflet-control-layers-toggle {
+      background-color: white !important;
+    }
+    
+    .leaflet-control-layers-expanded {
+      padding: 12px !important;
+      background: white !important;
+    }
+    
+    .leaflet-control-attribution {
+      background: rgba(255,255,255,0.78) !important;
+      backdrop-filter: blur(4px);
     }
   "))
 }

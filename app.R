@@ -95,12 +95,17 @@ ui <- fluidPage(
   
   # TITLE ----
   
-  titlePanel(
-    if (IS_DEV) {
-      "USFS Southern Area Superfog Screener Pilot — DEV"
-    } else {
-      "USFS Southern Area Superfog Screener Pilot"
-    }
+  div(
+    class = "sa-header",
+    
+    div(
+      class = "sa-header-title",
+      if (IS_DEV) {
+        "USFS Southern Area Superfog Screener — DEV"
+      } else {
+        "USFS Southern Area Superfog Screener"
+      }
+    )
   ),
   
   
@@ -156,7 +161,7 @@ ui <- fluidPage(
             ",
             
             div(
-              class = "sa-card",
+              class = "sa-card sa-fade-in",
               
               uiOutput("selected_info_map")
             )
@@ -197,7 +202,7 @@ ui <- fluidPage(
             ",
             
             div(
-              class = "sa-card",
+              class = "sa-card sa-fade-in",
               
               uiOutput("selected_info_table")
             )
@@ -228,13 +233,7 @@ ui <- fluidPage(
             )
           ),
           
-          div(
-            style = "margin-top:8px;",
-            plotOutput(
-              "sfog_point_risk_plot",
-              height = "250px"
-            )
-          )
+          uiOutput("sfog_plot_container")
         ),
         
         column(
@@ -1093,6 +1092,21 @@ server <- function(input, output, session) {
       )
   })
   
+  output$sfog_plot_container <- renderUI({
+    
+    req(selected_sfog_point())
+    
+    div(
+      class = "sa-card sa-fade-in",
+      style = "margin-top:8px;",
+      
+      plotOutput(
+        "sfog_point_risk_plot",
+        height = "250px"
+      )
+    )
+  })
+  
   
   # MAP PROXY OBSERVERS -------------------------------------------------
   
@@ -1641,6 +1655,7 @@ server <- function(input, output, session) {
     }
     
     div(
+      class = "sa-fade-in",
       style = "
       position:absolute;
       top:70px;
@@ -1709,40 +1724,66 @@ server <- function(input, output, session) {
     point_cols <- risk_colors[as.character(df$risk)]
     
     par(
-      mar = c(6, 6.5, 4, 6) + 0.1,
-      xpd = TRUE
+      mar = c(5.5, 6.5, 3.5, 2) + 0.1,
+      bg = "white",
+      family = "sans",
+      xpd = FALSE
+    )
+    
+    time_pad <- difftime(
+      max(df$time_et),
+      min(df$time_et),
+      units = "secs"
+    ) * 0.03
+    
+    x_lims <- c(
+      min(df$time_et) - time_pad,
+      max(df$time_et) + time_pad
     )
     
     plot(
       df$time_et,
       df$risk,
-      type = "l",
-      lwd = 2,
-      col = "#666666",
-      ylim = c(0.8, 3.2),
+      type = "n",
+      ylim = c(0.75, 3.25),
+      xlim = x_lims,
+      xaxs = "i",
       xaxt = "n",
       yaxt = "n",
       xlab = "",
       ylab = "",
-      main = paste0(
-        "Superfog Risk at ",
-        round(df$lat[1], 4),
-        ", ",
-        round(df$lon[1], 4)
-      )
+      bty = "n",
+      main = ""
     )
     
-    axis(
-      side = 2,
-      at = c(1, 2, 3),
-      labels = c(
-        "Minimal",
-        "Moderate",
-        "High"
-      ),
-      las = 1,
-      tick = TRUE,
-      cex.axis = 0.95
+    usr <- par("usr")
+    
+    rect(
+      usr[1], 0.75,
+      usr[2], 1.5,
+      col = adjustcolor("#58AFDD", alpha.f = 0.12),
+      border = NA
+    )
+    
+    rect(
+      usr[1], 1.5,
+      usr[2], 2.5,
+      col = adjustcolor("#FFB000", alpha.f = 0.12),
+      border = NA
+    )
+    
+    rect(
+      usr[1], 2.5,
+      usr[2], 3.25,
+      col = adjustcolor("#CA0020", alpha.f = 0.10),
+      border = NA
+    )
+    
+    lines(
+      df$time_et,
+      df$risk,
+      lwd = 2.5,
+      col = "#2b2f36"
     )
     
     points(
@@ -1750,19 +1791,53 @@ server <- function(input, output, session) {
       df$risk,
       pch = 21,
       bg = point_cols,
-      col = "#333333",
+      col = "#2b2f36",
       cex = 2.1,
       lwd = 1.2
     )
     
+    axis(
+      side = 2,
+      at = c(1, 2, 3),
+      labels = c("Minimal", "Moderate", "High"),
+      las = 1,
+      tick = FALSE,
+      cex.axis = 0.95,
+      col.axis = "#243447"
+    )
+    
+    axis_times <- df$time_et
+    
+    max_labels <- 9
+    
+    if (length(axis_times) > max_labels) {
+      axis_times <- axis_times[
+        unique(round(seq(1, length(axis_times), length.out = max_labels)))
+      ]
+    }
+    
     axis.POSIXct(
       side = 1,
-      x = df$time_et,
+      at = axis_times,
       format = "%m/%d\n%H:%M",
-      las = 2
+      las = 2,
+      cex.axis = 0.8,
+      col.axis = "#5f6b7a"
+    )
+    
+    title(
+      main = paste0(
+        "Superfog Risk at ",
+        round(df$lat[1], 4),
+        ", ",
+        round(df$lon[1], 4)
+      ),
+      adj = 0,
+      cex.main = 1.15,
+      font.main = 2,
+      col.main = "#243447"
     )
   })
-  
   output$sfog_cache_message <- renderUI({
     
     status <- sfog_cache_status()
@@ -1770,6 +1845,7 @@ server <- function(input, output, session) {
     if (status == "not_loaded") {
       return(
         div(
+          class = "sa-fade-in",
           style = "
           padding:10px;
           margin-bottom:10px;
@@ -1786,6 +1862,7 @@ server <- function(input, output, session) {
     if (status == "loading") {
       return(
         div(
+          class = "sa-fade-in",
           style = "
           padding:10px;
           margin-bottom:10px;
@@ -1803,6 +1880,7 @@ server <- function(input, output, session) {
     if (status == "failed") {
       return(
         div(
+          class = "sa-fade-in",
           style = "
           padding:10px;
           margin-bottom:10px;
@@ -1822,6 +1900,7 @@ server <- function(input, output, session) {
       
       return(
         div(
+          class = "sa-fade-in",
           style = "
         padding:8px 10px;
         margin-bottom:10px;
