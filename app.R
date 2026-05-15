@@ -1053,6 +1053,7 @@ server <- function(input, output, session) {
       hideGroup("AQI Forecast Today") |>
       hideGroup("AQI Forecast Tomorrow")
 
+  }, once = TRUE)
   
   observeEvent(cache_data(), {
     
