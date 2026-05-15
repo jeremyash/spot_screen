@@ -520,7 +520,10 @@ server <- function(input, output, session) {
   # STATE / CACHE OBJECTS -----------------------------------------------
   
   cache_data <- reactiveVal(initial_cache)
-  spot_map_ready <- reactiveVal(FALSE)
+  
+  spot_base_map_ready <- reactiveVal(FALSE)
+  spot_markers_ready <- reactiveVal(FALSE)
+  spot_cache_status <- reactiveVal("loading")
   
   airnow_today_data <- reactiveVal(NULL)
   airnow_tomorrow_data <- reactiveVal(NULL)
@@ -848,43 +851,13 @@ server <- function(input, output, session) {
         options = pathOptions(clickable = TRUE)
       )
     
-    if (nrow(df_map) > 0 && all(c("lon", "lat") %in% names(df_map))) {
-      df_today <- df_map %>% filter(issued == "Today")
-      df_yesterday <- df_map %>% filter(issued == "Yesterday")
-      
-      if (nrow(df_today) > 0) {
-        m <- m |>
-          addMarkers(
-            data = df_today,
-            lng = ~offset_lon,
-            lat = ~offset_lat,
-            layerId = ~spot_id,
-            group = "Today",
-            label = ~project_name,
-            labelOptions = marker_label_opts,
-            icon = fire_icon_today
-          )
-      }
-      
-      if (nrow(df_yesterday) > 0) {
-        m <- m |>
-          addMarkers(
-            data = df_yesterday,
-            lng = ~offset_lon,
-            lat = ~offset_lat,
-            layerId = ~spot_id,
-            group = "Yesterday",
-            label = ~project_name,
-            labelOptions = marker_label_opts,
-            icon = fire_icon_yesterday
-          )
-      }
-    }
     
     legend_toggle_html <- spot_map_toggle_legend(
       fire_icon_url_today,
       fire_icon_url_yesterday
     )
+    
+    spot_base_map_ready(TRUE)
     
     m |>
       addControl(html = legend_toggle_html, position = "bottomright") |>
@@ -1082,11 +1055,83 @@ server <- function(input, output, session) {
     
     later::later(
       function() {
-        spot_map_ready(TRUE)
+        spot_base_map_ready(TRUE)
       },
       delay = 0.75
     )
   }, once = TRUE)
+  
+  observeEvent(cache_data(), {
+    
+    req(spot_base_map_ready())
+    
+    df <- cache_data()$forecast_df
+    df_map <- offset_duplicate_points(df)
+    
+    fire_icon_today <- leaflet::icons(
+      iconUrl = make_fire_icon_path("today"),
+      iconWidth = 24,
+      iconHeight = 24,
+      iconAnchorX = 12,
+      iconAnchorY = 12
+    )
+    
+    fire_icon_yesterday <- leaflet::icons(
+      iconUrl = make_fire_icon_path("yesterday"),
+      iconWidth = 24,
+      iconHeight = 24,
+      iconAnchorX = 12,
+      iconAnchorY = 12
+    )
+    
+    leaflet::leafletProxy("forecast_map") |>
+      leaflet::clearGroup("Today") |>
+      leaflet::clearGroup("Yesterday")
+    
+    if (nrow(df_map) > 0 && all(c("lon", "lat") %in% names(df_map))) {
+      
+      df_today <- df_map |>
+        dplyr::filter(issued == "Today")
+      
+      df_yesterday <- df_map |>
+        dplyr::filter(issued == "Yesterday")
+      
+      if (nrow(df_today) > 0) {
+        leaflet::leafletProxy("forecast_map") |>
+          leaflet::addMarkers(
+            data = df_today,
+            lng = ~offset_lon,
+            lat = ~offset_lat,
+            layerId = ~spot_id,
+            group = "Today",
+            label = ~project_name,
+            labelOptions = marker_label_opts,
+            icon = fire_icon_today
+          )
+      }
+      
+      if (nrow(df_yesterday) > 0) {
+        leaflet::leafletProxy("forecast_map") |>
+          leaflet::addMarkers(
+            data = df_yesterday,
+            lng = ~offset_lon,
+            lat = ~offset_lat,
+            layerId = ~spot_id,
+            group = "Yesterday",
+            label = ~project_name,
+            labelOptions = marker_label_opts,
+            icon = fire_icon_yesterday
+          )
+      }
+    }
+    
+    leaflet::leafletProxy("forecast_map") |>
+      leaflet::showGroup("Today") |>
+      leaflet::hideGroup("Yesterday")
+    
+    spot_markers_ready(TRUE)
+    
+  }, ignoreInit = FALSE)
   
   observeEvent(input$reset_map_click, {
     selected_burn_id(NULL)
@@ -1379,7 +1424,10 @@ server <- function(input, output, session) {
   
   output$spot_map_loading_overlay <- renderUI({
     
-    if (identical(spot_map_ready(), TRUE)) {
+    if (
+      identical(spot_base_map_ready(), TRUE) &&
+      identical(spot_markers_ready(), TRUE)
+    ) {
       return(NULL)
     }
     
