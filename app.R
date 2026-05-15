@@ -1026,9 +1026,10 @@ server <- function(input, output, session) {
         data = r8_forests,
         layerId = ~paste0("forest_", forest_id),
         fillColor = "#228B22",
-        fillOpacity = 0.4,
-        color = "#006400",
-        weight = 1,
+        fillOpacity = 0.18,
+        color = "#4f6f52",
+        weight = 0.8,
+        opacity = 0.7,
         smoothFactor = 0.5,
         options = pathOptions(clickable = TRUE)
       )
@@ -1072,11 +1073,11 @@ server <- function(input, output, session) {
       ) |>
       addPolygons(
         data = r8_forests,
-        color = "darkgreen",
-        weight = 1,
-        opacity = 0.8,
-        fillColor = "darkgreen",
-        fillOpacity = 0.12,
+        color = "#4f6f52",
+        weight = 0.8,
+        opacity = 0.55,
+        fillColor = "#6b8f71",
+        fillOpacity = 0.08,
         smoothFactor = 0.8,
         group = "Region 8 Forests",
         options = pathOptions(clickable = FALSE)
