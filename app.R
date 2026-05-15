@@ -253,6 +253,7 @@ ui <- fluidPage(
               div(class = "sa-card-title", "Forecast Time"),
               
               fluidRow(
+                style = "display:flex; align-items:center;",
                 column(
                   width = 2,
                   actionButton(
@@ -274,16 +275,12 @@ ui <- fluidPage(
                 column(
                   width = 8,
                   div(
-                    style = "
-                      display:flex;
-                      align-items:center;
-                      justify-content:center;
-                      height:38px;
-                      font-weight:bold;
-                      font-size:18px;
-                      text-align:center;
-                    ",
-                    textOutput("sfog_valid_time")
+                    class = "sfog-time-card",
+                    
+                    div(
+                      class = "sfog-time-card-value",
+                      textOutput("sfog_valid_time")
+                    )
                   )
                 ),
                 
@@ -307,12 +304,13 @@ ui <- fluidPage(
               ),
               
               div(
+                class = "sfog-slider-wrap",
                 style = "
                   width:100%;
                   margin-top:10px;
                   margin-bottom:10px;
                 ",
-                
+                              
                 uiOutput("sfog_time_slider")
               ),
               

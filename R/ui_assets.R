@@ -579,5 +579,40 @@ app_theme_css <- function() {
     box-shadow:
       0 3px 10px rgba(0,0,0,0.12) !important;
   }
+  
+  .sfog-slider-wrap .form-group {
+    width: 100% !important;
+    margin-bottom: 0 !important;
+  }
+  
+  .sfog-slider-wrap .irs {
+    width: 100% !important;
+  }
+  
+  .sfog-time-card {
+      background: #f7f9fb;
+      border: 1px solid #d7dee7;
+      border-radius: 10px;
+    
+      padding: 10px 12px;
+    
+      min-height: 58px;
+    
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    
+      text-align: center;
+    
+      box-shadow:
+        0 1px 4px rgba(0,0,0,0.05);
+    }
+    
+    .sfog-time-card-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #243447;
+      line-height: 1.2;
+    }
   "))
 }
