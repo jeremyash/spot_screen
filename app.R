@@ -1016,10 +1016,10 @@ server <- function(input, output, session) {
       setView(lng = -88.11, lat = 34.95, zoom = 5) |>
       addPolygons(
         data = r8,
+        color = "#5b6573",
+        weight = 1.2,
+        opacity = 0.55,
         fill = FALSE,
-        color = "#000000",
-        weight = 2,
-        opacity = 1,
         options = pathOptions(clickable = FALSE)
       ) |>
       addPolygons(
@@ -1066,10 +1066,10 @@ server <- function(input, output, session) {
       ) |>
       addPolygons(
         data = r8,
-        fill = FALSE,
-        color = "#000000",
-        weight = 2,
-        opacity = 1
+        color = "#5b6573",
+        weight = 1.2,
+        opacity = 0.55,
+        fill = FALSE
       ) |>
       addPolygons(
         data = r8_forests,
