@@ -86,7 +86,10 @@ ui <- fluidPage(
     sfog_overlay_css(),
     
     # Spot map controls JavaScript ----
-    spot_map_controls_js()
+    spot_map_controls_js(),
+    
+    # Other CSS ---
+    app_theme_css()
   ),
   
   
@@ -229,103 +232,111 @@ ui <- fluidPage(
           overflow-y:auto;
         ",
             
-            fluidRow(
-              column(
-                width = 2,
-                actionButton(
-                  "sfog_prev_hour",
-                  label = NULL,
-                  icon = icon("chevron-left"),
-                  width = "100%",
-                  style = "
-                    height:38px;
-                    display:flex;
-                    align-items:center;
-                    justify-content:center;
-                    padding:0;
-                    font-size:22px;
-                  "
+            div(
+              class = "sa-time-card",
+              
+              div(class = "sa-card-title", "Forecast Time"),
+              
+              fluidRow(
+                column(
+                  width = 2,
+                  actionButton(
+                    "sfog_prev_hour",
+                    label = NULL,
+                    icon = icon("chevron-left"),
+                    width = "100%",
+                    style = "
+                  height:38px;
+                  display:flex;
+                  align-items:center;
+                  justify-content:center;
+                  padding:0;
+                  font-size:22px;
+                "
+                  )
+                ),
+                
+                column(
+                  width = 8,
+                  div(
+                    style = "
+                  display:flex;
+                  align-items:center;
+                  justify-content:center;
+                  height:38px;
+                  font-weight:bold;
+                  font-size:18px;
+                  text-align:center;
+                ",
+                    textOutput("sfog_valid_time")
+                  )
+                ),
+                
+                column(
+                  width = 2,
+                  actionButton(
+                    "sfog_next_hour",
+                    label = NULL,
+                    icon = icon("chevron-right"),
+                    width = "100%",
+                    style = "
+                  height:38px;
+                  display:flex;
+                  align-items:center;
+                  justify-content:center;
+                  padding:0;
+                  font-size:22px;
+                "
+                  )
                 )
               ),
               
-              column(
-                width = 8,
+              div(
+                style = "
+              width:100%;
+              display:flex;
+              justify-content:center;
+              margin-top:10px;
+              margin-bottom:10px;
+            ",
                 div(
-                  style = "
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                height:38px;
-                font-weight:bold;
-                font-size:18px;
-                text-align:center;
-              ",
-                  textOutput("sfog_valid_time")
+                  style = "width:95%;",
+                  uiOutput("sfog_time_slider")
                 )
               ),
               
-              column(
-                width = 2,
-                actionButton(
-                  "sfog_next_hour",
-                  label = NULL,
-                  icon = icon("chevron-right"),
-                  width = "100%",
-                  style = "
-                    height:38px;
-                    display:flex;
-                    align-items:center;
-                    justify-content:center;
-                    padding:0;
-                    font-size:22px;
-                  "
-                )
-              )
+              uiOutput("sfog_cache_message")
             ),
-            
-            br(),
             
             div(
-              style = "
-                width:100%;
-                display:flex;
-                justify-content:center;
-                margin-top:10px;
-                margin-bottom:10px;
-              ",
-                          
-              div(
-                style = "width:95%;",
-                uiOutput("sfog_time_slider")
+              class = "sa-point-card",
+              
+              div(class = "sa-card-title", "Point Risk Time Series"),
+              
+              p(
+                class = "sa-muted",
+                "Enter a latitude/longitude or click the map."
+              ),
+              
+              textInput(
+                "sfog_query_lat",
+                "Latitude",
+                value = "",
+                placeholder = "e.g. 35.5951"
+              ),
+              
+              textInput(
+                "sfog_query_lon",
+                "Longitude",
+                value = "",
+                placeholder = "e.g. -82.5515"
+              ),
+              
+              actionButton(
+                "sfog_extract_point",
+                "Plot Point Risk",
+                width = "100%"
               )
-            ),
-            
-            uiOutput("sfog_cache_message"),
-            
-            hr(),
-            
-            h4("Point Risk Time Series"),
-            
-            p("Enter a latitude/longitude or click the map."),
-            
-            textInput(
-              "sfog_query_lat",
-              "Latitude",
-              value = "",
-              placeholder = "e.g. 35.5951"
-            ),
-            
-            textInput(
-              "sfog_query_lon",
-              "Longitude",
-              value = "",
-              placeholder = "e.g. -82.5515"
-            ),
-            
-            actionButton(
-              "sfog_extract_point",
-              "Plot Point Risk",
-              width = "100%"
             )
           )
         )

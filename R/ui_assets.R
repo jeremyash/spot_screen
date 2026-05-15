@@ -164,3 +164,59 @@ map_loading_overlay <- function(message) {
     message
   )
 }
+
+app_theme_css <- function() {
+  htmltools::tags$style(htmltools::HTML("
+    .sa-card {
+      background: #ffffff;
+      border: 1px solid #d9e2d9;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .sa-card-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #1f3b1f;
+      margin-bottom: 8px;
+    }
+
+    .sa-muted {
+      color: #666666;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .sa-section-accent {
+      border-left: 5px solid #228B22;
+      background: #f7faf7;
+    }
+
+    .sa-time-card {
+      background: linear-gradient(135deg, #f7faf7, #ffffff);
+      border: 1px solid #cfe0cf;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+
+    .sa-point-card {
+      background: #f8fbff;
+      border: 1px solid #cbdff2;
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 14px;
+    }
+
+    .sa-small-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #444444;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 6px;
+    }
+  "))
+}
