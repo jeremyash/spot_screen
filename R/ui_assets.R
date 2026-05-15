@@ -116,14 +116,26 @@ spot_map_reset_button <- function() {
   "
 }
 
-sfog_risk_legend <- htmltools::HTML('
-    <div style="background:white; padding:10px; border-radius:6px;">
-      <div style="font-weight:bold; margin-bottom:6px;">Superfog Risk</div>
-      <div><span style="background:#58AFDD; width:14px; height:14px; display:inline-block; border:1px solid #777;"></span> Minimal</div>
-      <div><span style="background:#FFB000; width:14px; height:14px; display:inline-block; border:1px solid #777;"></span> Moderate</div>
-      <div><span style="background:#CA0020; width:14px; height:14px; display:inline-block; border:1px solid #777;"></span> High</div>
+sfog_risk_legend <- htmltools::HTML("
+  <div class='sa-map-legend'>
+    <div class='sa-map-legend-title'>Superfog Risk</div>
+
+    <div class='sa-map-legend-row'>
+      <span class='sa-map-legend-swatch' style='background:#58AFDD;'></span>
+      <span>Minimal</span>
     </div>
-    ')
+
+    <div class='sa-map-legend-row'>
+      <span class='sa-map-legend-swatch' style='background:#FFB000;'></span>
+      <span>Moderate</span>
+    </div>
+
+    <div class='sa-map-legend-row'>
+      <span class='sa-map-legend-swatch' style='background:#CA0020;'></span>
+      <span>High</span>
+    </div>
+  </div>
+")
 
 sfog_map_reset_button <- function() {
   "
@@ -334,50 +346,50 @@ app_theme_css <- function() {
     }
     
     .nav-tabs {
-  border-bottom: 2px solid #d7dee7 !important;
-  margin-bottom: 18px;
-  padding-left: 4px;
-}
-
-.nav-tabs > li {
-  margin-bottom: -2px;
-}
-
-.nav-tabs > li > a {
-  border: 1px solid transparent !important;
-  border-radius: 10px 10px 0 0 !important;
-  
-  background: #eef2f6 !important;
-  color: #4c5a6a !important;
-  
-  font-weight: 700;
-  font-size: 15px;
-  
-  padding: 11px 20px;
-  margin-right: 6px;
-  
-  transition:
-    background 0.18s ease,
-    color 0.18s ease;
-}
-
-.nav-tabs > li > a:hover {
-  background: #e3e9ef !important;
-  color: #243447 !important;
-}
-
-.nav-tabs > li.active > a,
-.nav-tabs > li.active > a:hover,
-.nav-tabs > li.active > a:focus {
-  
-  background: white !important;
-  color: #243447 !important;
-  
-  border: 2px solid #243447 !important;
-  border-bottom: 2px solid white !important;
-  
-  box-shadow: none !important;
-}
+      border-bottom: 2px solid #d7dee7 !important;
+      margin-bottom: 18px;
+      padding-left: 4px;
+    }
+    
+    .nav-tabs > li {
+      margin-bottom: -2px;
+    }
+    
+    .nav-tabs > li > a {
+      border: 1px solid transparent !important;
+      border-radius: 10px 10px 0 0 !important;
+      
+      background: #eef2f6 !important;
+      color: #4c5a6a !important;
+      
+      font-weight: 700;
+      font-size: 15px;
+      
+      padding: 11px 20px;
+      margin-right: 6px;
+      
+      transition:
+        background 0.18s ease,
+        color 0.18s ease;
+    }
+    
+    .nav-tabs > li > a:hover {
+      background: #e3e9ef !important;
+      color: #243447 !important;
+    }
+    
+    .nav-tabs > li.active > a,
+    .nav-tabs > li.active > a:hover,
+    .nav-tabs > li.active > a:focus {
+      
+      background: white !important;
+      color: #243447 !important;
+      
+      border: 2px solid #243447 !important;
+      border-bottom: 2px solid white !important;
+      
+      box-shadow: none !important;
+    }
     
     .leaflet-control-zoom a {
       background: white !important;
@@ -417,6 +429,46 @@ app_theme_css <- function() {
     .leaflet-control-attribution {
       background: rgba(255,255,255,0.78) !important;
       backdrop-filter: blur(4px);
+    }
+    
+    .sa-map-legend {
+      background: rgba(255,255,255,0.94);
+      backdrop-filter: blur(4px);
+      border: 1px solid #d9e2d9;
+      border-radius: 10px;
+      padding: 11px 13px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.14);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      min-width: 135px;
+    }
+    
+    .sa-map-legend-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #243447;
+      margin-bottom: 8px;
+    }
+    
+    .sa-map-legend-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #344054;
+      margin-bottom: 5px;
+    }
+    
+    .sa-map-legend-row:last-child {
+      margin-bottom: 0;
+    }
+    
+    .sa-map-legend-swatch {
+      width: 18px;
+      height: 12px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.18);
+      display: inline-block;
     }
   "))
 }
