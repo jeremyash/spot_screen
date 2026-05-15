@@ -9,13 +9,13 @@ build_selected_info <- function(
     return(
       htmltools::div(
         style = "
-            margin-top:20px;
-            padding:15px;
-            border:2px dashed #cccccc;
-            background:#f9f9f9;
-            text-align:center;
-            font-size:18px;
-          ",
+        padding:18px;
+        border:2px dashed #cccccc;
+        background:#f9f9f9;
+        text-align:center;
+        font-size:18px;
+        border-radius:8px;
+      ",
         prompt_text
       )
     )

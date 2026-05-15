@@ -143,13 +143,18 @@ ui <- fluidPage(
           4,
           div(
             style = "
-              height:650px;
-              overflow-y:auto;
-              border-left:1px solid #d9d9d9;
-              padding-left:15px;
-              padding-right:10px;
-            ",
-            uiOutput("selected_info_map")
+      height:650px;
+      overflow-y:auto;
+      border-left:1px solid #d9d9d9;
+      padding-left:15px;
+      padding-right:10px;
+    ",
+            
+            div(
+              class = "sa-card",
+              
+              uiOutput("selected_info_map")
+            )
           )
         )
       )
