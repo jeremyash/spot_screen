@@ -997,18 +997,18 @@ server <- function(input, output, session) {
     
     fire_icon_today <- icons(
       iconUrl = fire_icon_url_today,
-      iconWidth = 24,
-      iconHeight = 24,
-      iconAnchorX = 12,
-      iconAnchorY = 12
+      iconWidth = 28,
+      iconHeight = 28,
+      iconAnchorX = 14,
+      iconAnchorY = 14
     )
     
     fire_icon_yesterday <- icons(
       iconUrl = fire_icon_url_yesterday,
-      iconWidth = 24,
-      iconHeight = 24,
-      iconAnchorX = 12,
-      iconAnchorY = 12
+      iconWidth = 28,
+      iconHeight = 28,
+      iconAnchorX = 14,
+      iconAnchorY = 14
     )
     
     m <- leaflet() |>
@@ -1235,10 +1235,12 @@ server <- function(input, output, session) {
           lat = click$lat,
           popup = paste0(
             "<div style='",
-            "font-size:18px;",
-            "font-weight:600;",
-            "color:#006400;",
+            "padding:6px 10px;",
+            "font-size:17px;",
+            "font-weight:700;",
+            "color:#243447;",
             "text-align:center;",
+            "letter-spacing:0.01em;",
             "font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;",
             "'>",
             forest_row$forest[1],

@@ -549,6 +549,33 @@ app_theme_css <- function() {
       font-weight: 700;
       line-height: 1.5;
       max-width: 340px;
+   }
+    
+    .leaflet-popup-content-wrapper {
+      border-radius: 12px !important;
+      
+      box-shadow:
+        0 6px 18px rgba(0,0,0,0.18) !important;
+        
+      padding: 2px !important;
     }
+    
+  .leaflet-popup-content {
+    margin: 12px 14px !important;
+    
+    font-family:
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Roboto,
+      Helvetica,
+      Arial,
+      sans-serif;
+  }
+  
+  .leaflet-popup-tip {
+    box-shadow:
+      0 3px 10px rgba(0,0,0,0.12) !important;
+  }
   "))
 }
