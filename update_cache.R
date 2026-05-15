@@ -594,7 +594,21 @@ build_cache <- function() {
   )
   
   spots_sf <- spots_sf[lengths(st_intersects(spots_sf, r8)) > 0, ]
-  forecast_df <- st_drop_geometry(spots_sf)
+  forecast_df <- st_drop_geometry(spots_sf) 
+  
+  forecast_df <- forecast_df %>%
+    mutate(
+      issuanceTime_utc = issuanceTime,
+      issuance_tz = tz,
+      issuanceTime_local = lubridate::with_tz(
+        issuanceTime_utc,
+        issuance_tz
+      ),
+      issuance_display = format(
+        issuanceTime_local,
+        "%Y-%m-%d %H:%M %Z"
+      )
+    )
   
   log_msg("Inside Region 8 polygon:", nrow(forecast_df))
   
