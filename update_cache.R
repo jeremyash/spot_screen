@@ -597,18 +597,19 @@ build_cache <- function() {
   forecast_df <- st_drop_geometry(spots_sf) 
   
   forecast_df <- forecast_df %>%
+    rowwise() %>%
     mutate(
       issuanceTime_utc = issuanceTime,
       issuance_tz = tz,
-      issuanceTime_local = lubridate::with_tz(
-        issuanceTime_utc,
-        issuance_tz
-      ),
       issuance_display = format(
-        issuanceTime_local,
+        lubridate::with_tz(
+          issuanceTime_utc,
+          issuance_tz
+        ),
         "%Y-%m-%d %H:%M %Z"
       )
-    )
+    ) %>%
+    ungroup()
   
   log_msg("Inside Region 8 polygon:", nrow(forecast_df))
   
