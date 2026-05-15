@@ -1497,11 +1497,11 @@ server <- function(input, output, session) {
     burns_tbl <- burns_tbl %>%
       mutate(
         issued_order = ifelse(issued == "Today", 0, 1),
-        issued_display = dplyr::if_else(
-          "issuance_display" %in% names(burns_tbl),
-          issuance_display,
+        issued_display = if ("issuance_display" %in% names(burns_tbl)) {
+          issuance_display
+        } else {
           format_issued_datetime(issuanceTime)
-        )
+        }
       ) %>%
       arrange(forest, issued_order, desc(issuanceTime), project_name)
     
