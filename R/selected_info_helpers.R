@@ -9,7 +9,6 @@ build_selected_info <- function(
     return(
       htmltools::div(
         class = "sa-empty-state sa-fade-in",
-        
         htmltools::div(
           class = "sa-empty-state-text",
           prompt_text
@@ -25,10 +24,21 @@ build_selected_info <- function(
   
   if (base::length(idx) == 0) return(NULL)
   
-  spot_url <- forecast_df$nws_spot_url[idx]
-  project <- forecast_df$project_name[idx]
+  idx <- idx[1]
+  selected_row <- forecast_df[idx, , drop = FALSE]
+  
+  spot_url <- selected_row$nws_spot_url[1]
+  project <- selected_row$project_name[1]
   sfog_df <- sfog_tables[[idx]]
-  issued_display <- format_issued_datetime(forecast_df$issuanceTime[idx])
+  
+  issued_display <- if (
+    "issuance_display" %in% names(selected_row) &&
+    !base::is.na(selected_row$issuance_display[1])
+  ) {
+    selected_row$issuance_display[1]
+  } else {
+    format_issued_datetime(selected_row$issuanceTime[1])
+  }
   
   if (base::is.null(sfog_df)) {
     return(
@@ -39,6 +49,7 @@ build_selected_info <- function(
       ))
     )
   }
+  
   
   sfog_status <- sfog_df |>
     dplyr::rowwise() |>
