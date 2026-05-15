@@ -119,7 +119,9 @@ ui <- fluidPage(
             
             uiOutput("spot_map_loading_overlay"),
             
-            leafletOutput("forecast_map", height = "650px")
+            leafletOutput("forecast_map", height = "650px"),
+            uiOutput("aqi_loading_overlay")
+            
           ),
           div(
             style = "
@@ -531,6 +533,8 @@ server <- function(input, output, session) {
   airnow_today_added <- reactiveVal(FALSE)
   airnow_tomorrow_added <- reactiveVal(FALSE)
   
+  aqi_loading <- reactiveVal(FALSE)
+  
   sfog_cache <- reactiveVal(NULL)
   sfog_cache_status <- reactiveVal("not_loaded")
   
@@ -914,7 +918,30 @@ server <- function(input, output, session) {
   # MAP PROXY OBSERVERS -------------------------------------------------
   
   observeEvent(input$forecast_map_groups, {
+    
     active_groups <- input$forecast_map_groups
+    
+    needs_today_load <- "AQI Forecast Today" %in% active_groups &&
+      is.null(airnow_today_data())
+    
+    needs_tomorrow_load <- "AQI Forecast Tomorrow" %in% active_groups &&
+      is.null(airnow_tomorrow_data())
+    
+    show_aqi_loading <- needs_today_load || needs_tomorrow_load
+    
+    if (show_aqi_loading) {
+      aqi_loading(TRUE)
+      
+      on.exit(
+        later::later(
+          function() {
+            aqi_loading(FALSE)
+          },
+          delay = 0.5
+        ),
+        add = TRUE
+      )
+    }
     
     if ("AQI Forecast Today" %in% active_groups) {
       
@@ -1426,6 +1453,29 @@ server <- function(input, output, session) {
     }
     
     map_loading_overlay("Loading Spot Map...")
+  })
+  
+  output$aqi_loading_overlay <- renderUI({
+    
+    if (!aqi_loading()) {
+      return(NULL)
+    }
+    
+    div(
+      style = "
+      position:absolute;
+      top:70px;
+      right:10px;
+      z-index:1000;
+      background:rgba(255,255,255,0.95);
+      padding:8px 12px;
+      border-radius:6px;
+      box-shadow:0 1px 4px rgba(0,0,0,0.3);
+      font-weight:600;
+    ",
+      icon("spinner", class = "fa-spin"),
+      " Loading AQI..."
+    )
   })
   
   
