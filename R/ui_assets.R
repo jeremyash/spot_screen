@@ -61,6 +61,17 @@ spot_map_controls_js <- function() {
     $(document).on('change', 'input[name=\"date_layer_choice\"]', function () {
       Shiny.setInputValue('map_layer_choice', $(this).val(), {priority: 'event'});
     });
+    
+    $(document).on('click', '#sfog_reset_map', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    
+      Shiny.setInputValue(
+        'sfog_reset_map_click',
+        Math.random(),
+        {priority: 'event'}
+      );
+    });
   "))
 }
 
@@ -168,9 +179,10 @@ sfog_risk_legend <- htmltools::HTML("
 ")
 
 sfog_map_reset_button <- function() {
+  
   "
   <button
-    id='reset_map'
+    id='sfog_reset_map'
     class='sa-primary-btn'
     style='
       padding:6px 12px;
