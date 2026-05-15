@@ -172,7 +172,15 @@ app_theme_css <- function() {
       padding: 14px;
       margin-bottom: 14px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      transition:
+        box-shadow 0.18s ease,
+        transform 0.18s ease;
     }
+
+      .sa-card:hover {
+        box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+        transform: translateY(-1px);
+      }
 
     .sa-card-title {
       font-size: 18px;

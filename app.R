@@ -395,36 +395,172 @@ ui <- fluidPage(
         br(),
         
         div(
-          style = "max-width:700px; margin:auto;",
+          class = "sa-card",
+          style = "max-width:720px; margin:auto;",
+          
+          div(
+            class = "sa-card-title",
+            "Superfog Screening Thresholds"
+          ),
+          
           tags$table(
-            style = "width:100%; border-collapse:collapse; font-size:16px;",
+            style = "
+              width:100%;
+              border-collapse:separate;
+              border-spacing:0;
+              font-size:15px;
+            ",
+            
             tags$thead(
               tags$tr(
-                tags$th(style = "padding:10px; border-bottom:2px solid black;", "Variable"),
-                tags$th(style = "padding:10px; border-bottom:2px solid black;", "Watch Out"),
-                tags$th(style = "padding:10px; border-bottom:2px solid black;", "Critical")
+                tags$th(
+                  style = "
+                    padding:12px;
+                    text-align:left;
+                    color:#2b2f36;
+                    font-weight:700;
+                    border:2px solid #2b2f36;
+                  ",
+                  "Variable"
+                ),
+                tags$th(
+                  style = "
+                    padding:12px;
+                    text-align:center;
+                    color:#2b2f36;
+                    font-weight:700;
+                    border:2px solid #2b2f36;
+                  ",
+                  "Watch Out"
+                ),
+                tags$th(
+                  style = "
+                    padding:12px;
+                    text-align:center;
+                    color:#2b2f36;
+                    font-weight:700;
+                    border:2px solid #2b2f36;
+                  ",
+                  "Critical"
+                )
               )
             ),
+            
             tags$tbody(
               tags$tr(
-                tags$td(style = "padding:8px;", "Temperature"),
-                tags$td(style = "background:#FFDA00; padding:8px; text-align:center; font-weight:bold;", "<70°F"),
-                tags$td(style = "background:#CA0020; color:white; padding:8px; text-align:center; font-weight:bold;", "<55°F")
+                style = "background:#fafbfc;",
+                
+                tags$td(
+                  style = "padding:10px; font-weight:600;",
+                  "Temperature"
+                ),
+                
+                tags$td(
+                  style = "
+            background:#FFE066;
+            padding:10px;
+            text-align:center;
+            font-weight:bold;
+          ",
+                  "<70°F"
+                ),
+                
+                tags$td(
+                  style = "
+            background:#C92A2A;
+            color:white;
+            padding:10px;
+            text-align:center;
+            font-weight:bold;
+          ",
+                  "<55°F"
+                )
               ),
+              
               tags$tr(
-                tags$td(style = "padding:8px;", "Relative Humidity"),
-                tags$td(style = "background:#FFDA00; padding:8px; text-align:center; font-weight:bold;", ">70%"),
-                tags$td(style = "background:#CA0020; color:white; padding:8px; text-align:center; font-weight:bold;", ">90%")
+                tags$td(
+                  style = "padding:10px; font-weight:600;",
+                  "Relative Humidity"
+                ),
+                
+                tags$td(
+                  style = "
+            background:#FFE066;
+            padding:10px;
+            text-align:center;
+            font-weight:bold;
+          ",
+                  ">70%"
+                ),
+                
+                tags$td(
+                  style = "
+            background:#C92A2A;
+            color:white;
+            padding:10px;
+            text-align:center;
+            font-weight:bold;
+          ",
+                  ">90%"
+                )
               ),
+              
               tags$tr(
-                tags$td(style = "padding:8px;", "Surface (20 ft) Wind Speed"),
-                tags$td(style = "background:#FFDA00; padding:8px; text-align:center; font-weight:bold;", "<7 mph"),
-                tags$td(style = "background:#CA0020; color:white; padding:8px; text-align:center; font-weight:bold;", "<4 mph")
+                style = "background:#fafbfc;",
+                
+                tags$td(
+                  style = "padding:10px; font-weight:600;",
+                  "Surface (20 ft) Wind Speed"
+                ),
+                
+                tags$td(
+                  style = "
+            background:#FFE066;
+            padding:10px;
+            text-align:center;
+            font-weight:bold;
+          ",
+                  "<7 mph"
+                ),
+                
+                tags$td(
+                  style = "
+            background:#C92A2A;
+            color:white;
+            padding:10px;
+            text-align:center;
+            font-weight:bold;
+          ",
+                  "<4 mph"
+                )
               ),
+              
               tags$tr(
-                tags$td(style = "padding:8px;", "Cloud Cover"),
-                tags$td(style = "background:#FFDA00; padding:8px; text-align:center; font-weight:bold;", "<60%"),
-                tags$td(style = "background:#CA0020; color:white; padding:8px; text-align:center; font-weight:bold;", "<40%")
+                tags$td(
+                  style = "padding:10px; font-weight:600;",
+                  "Cloud Cover"
+                ),
+                
+                tags$td(
+                  style = "
+            background:#FFE066;
+            padding:10px;
+            text-align:center;
+            font-weight:bold;
+          ",
+                  "<60%"
+                ),
+                
+                tags$td(
+                  style = "
+            background:#C92A2A;
+            color:white;
+            padding:10px;
+            text-align:center;
+            font-weight:bold;
+          ",
+                  "<40%"
+                )
               )
             )
           )
