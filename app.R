@@ -881,12 +881,15 @@ server <- function(input, output, session) {
     
     valid_times <- x$valid_times
     
+    point_tz <- lookup_point_tz(lat, lon)
+    
     data.frame(
       time_utc = valid_times,
-      time_et = lubridate::with_tz(
+      time_local = lubridate::with_tz(
         valid_times,
-        "America/New_York"
+        point_tz
       ),
+      timezone = point_tz,
       risk = risk_vals,
       lat = lat,
       lon = lon
@@ -1703,11 +1706,26 @@ server <- function(input, output, session) {
     req(input$sfog_hour)
     
     x <- sfog_cache()
-    
     valid_times <- get_sfog_valid_times(x)
     
-    format_sfog_valid_time(
-      valid_times[input$sfog_hour]
+    current_time <- valid_times[input$sfog_hour]
+    
+    pt <- selected_sfog_point()
+    
+    tz <- if (
+      !is.null(pt) &&
+      !is.na(pt$lat) &&
+      !is.na(pt$lon)
+    ) {
+      lookup_point_tz(pt$lat, pt$lon)
+    } else {
+      "America/New_York"
+    }
+    
+    format_time_local(
+      current_time,
+      tz,
+      "%b %d, %Y %I:%M %p %Z"
     )
   })
   
@@ -1725,6 +1743,8 @@ server <- function(input, output, session) {
     
     point_cols <- risk_colors[as.character(df$risk)]
     
+    plot_tz <- df$timezone[1]
+    
     par(
       mar = c(6.2, 8.2, 3.5, 2) + 0.1,
       bg = "white",
@@ -1733,18 +1753,18 @@ server <- function(input, output, session) {
     )
     
     time_pad <- difftime(
-      max(df$time_et),
-      min(df$time_et),
+      max(df$time_utc),
+      min(df$time_utc),
       units = "secs"
     ) * 0.03
     
     x_lims <- c(
-      min(df$time_et) - time_pad,
-      max(df$time_et) + time_pad
+      min(df$time_utc) - time_pad,
+      max(df$time_utc) + time_pad
     )
     
     plot(
-      df$time_et,
+      df$time_utc,
       df$risk,
       type = "n",
       ylim = c(0.75, 3.25),
@@ -1782,14 +1802,14 @@ server <- function(input, output, session) {
     )
     
     lines(
-      df$time_et,
+      df$time_utc,
       df$risk,
       lwd = 2.5,
       col = "#2b2f36"
     )
     
     points(
-      df$time_et,
+      df$time_utc,
       df$risk,
       pch = 21,
       bg = point_cols,
@@ -1809,7 +1829,7 @@ server <- function(input, output, session) {
       col.axis = "#1f2933"
     )
     
-    axis_times <- df$time_et
+    axis_times <- df$time_utc
     
     max_labels <- 9
     
@@ -1822,7 +1842,10 @@ server <- function(input, output, session) {
     axis.POSIXct(
       side = 1,
       at = axis_times,
-      format = "%m/%d\n%H:%M",
+      labels = format(
+        lubridate::with_tz(axis_times, plot_tz),
+        "%m/%d\n%H:%M"
+      ),
       las = 2,
       cex.axis = 0.8,
       col.axis = "#344054"
@@ -1833,7 +1856,10 @@ server <- function(input, output, session) {
         "Superfog Risk at ",
         round(df$lat[1], 4),
         ", ",
-        round(df$lon[1], 4)
+        round(df$lon[1], 4),
+        " (",
+        plot_tz,
+        ")"
       ),
       adj = 0,
       cex.main = 1.15,
