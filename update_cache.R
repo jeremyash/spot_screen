@@ -606,7 +606,7 @@ build_cache <- function() {
           issuanceTime_utc,
           issuance_tz
         ),
-        "%Y-%m-%d %H:%M %Z"
+        "%b %d, %I:%M %p %Z"
       )
     ) %>%
     ungroup()
