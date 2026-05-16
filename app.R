@@ -348,6 +348,36 @@ ui <- fluidPage(
                 width = "100%",
                 class = "sa-primary-btn"
               )
+            ),
+            div(
+              style = "
+    margin-top:14px;
+    padding:10px 12px;
+    
+    background:#fff8e1;
+    border-left:4px solid #d97706;
+    border-radius:8px;
+    
+    font-size:13px;
+    line-height:1.45;
+    color:#5b4630;
+    
+    box-shadow:0 1px 4px rgba(0,0,0,0.05);
+  ",
+              
+              tags$div(
+                style = "
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:0.05em;
+      color:#92400e;
+      margin-bottom:4px;
+      font-size:11px;
+    ",
+                "WARNING"
+              ),
+              
+              "This visualization is intended as a planning aid and should not replace NWS Spot Forecasts."
             )
           )
         )
