@@ -606,6 +606,43 @@ ui <- fluidPage(
         
         h2("About the Superfog Risk Visualization"),
         
+        div(
+          style = "
+    max-width:950px;
+    margin:0 auto 22px auto;
+    padding:16px 20px;
+    
+    background:#fff8e1;
+    border-left:6px solid #d97706;
+    border-radius:10px;
+    
+    box-shadow:0 2px 8px rgba(0,0,0,0.06);
+  ",
+          
+          div(
+            style = "
+      font-size:13px;
+      font-weight:800;
+      letter-spacing:0.08em;
+      text-transform:uppercase;
+      color:#92400e;
+      margin-bottom:6px;
+    ",
+            "Important"
+          ),
+          
+          div(
+            style = "
+      font-size:17px;
+      line-height:1.5;
+      color:#3b2f1c;
+      font-weight:600;
+    ",
+            
+            "This visualization is intended as a situational awareness and planning aid and should not replace NWS Spot Forecasts."
+          )
+        ),
+        
         p(
           HTML('The <strong>Superfog Risk</strong> tab provides an experimental regional visualization of hourly superfog risk conditions across the Southern Area using forecast data from the <a href="https://vlab.noaa.gov/web/mdl/ndfd" target="_blank">National Digital Forecast Database (NDFD)</a>.')
         ),
@@ -668,10 +705,6 @@ ui <- fluidPage(
         p(
           "The map updates every 30 minutes and displays hourly forecast guidance for the next several days. Users may click the map or manually enter latitude/longitude coordinates to generate a point-based superfog risk time series."
         ),
-        
-        p(
-          HTML('This visualization is intended as a situational awareness and planning aid and should not replace NWS Spot Forecasts.')
-        ), 
        
         br(),
         
