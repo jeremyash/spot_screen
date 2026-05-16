@@ -1725,7 +1725,7 @@ server <- function(input, output, session) {
     format_time_local(
       current_time,
       tz,
-      "%b %d, %Y %I:%M %p %Z"
+      "%b %d, %I:%M %p %Z"
     )
   })
   
