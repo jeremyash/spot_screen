@@ -626,5 +626,31 @@ app_theme_css <- function() {
       color: #243447;
       line-height: 1.2;
     }
+    
+   .sa-sfog-sidebar-warning {
+      margin-top: 14px;
+      padding: 10px 12px;
+      background: #fff8e1;
+      border-left: 4px solid #d97706;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    
+    .sa-sfog-sidebar-warning-label {
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #92400e;
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+    
+    .sa-sfog-sidebar-warning-text {
+      font-size: 13px;
+      line-height: 1.45;
+      color: #5b4630;
+      font-weight: 600;
+    }
+        
   "))
 }

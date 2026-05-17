@@ -81,8 +81,8 @@ ui <- fluidPage(
     
     # Superfog PNG overlay JavaScript ----
     sfog_overlay_js(),
-            
-            
+    
+    
     # Superfog PNG overlay CSS ----
     sfog_overlay_css(),
     
@@ -114,530 +114,514 @@ ui <- fluidPage(
   
   tabsetPanel(
     id = "main_tabs",
-    
-    
-    # SPOT MAP TAB ----
-    
-    tabPanel(
-      "Spot Map",
-      fluidRow(
-        column(
-          8,
-          div(
-            style = "position:relative;",
-            
-            uiOutput("spot_map_loading_overlay"),
-            
-            leafletOutput("forecast_map", height = "650px"),
-            uiOutput("aqi_loading_overlay")
-            
-          ),
-          div(
-            class = "sa-card",
-            style = "
+
+        
+        
+        # SPOT MAP TAB ----
+        
+        tabPanel(
+          "Spot Map",
+          fluidRow(
+            column(
+              8,
+              div(
+                style = "position:relative;",
+                
+                uiOutput("spot_map_loading_overlay"),
+                
+                leafletOutput("forecast_map", height = "650px"),
+                uiOutput("aqi_loading_overlay")
+                
+              ),
+              div(
+                class = "sa-card",
+                style = "
               margin-top:10px;
               padding-top:10px;
               padding-bottom:10px;
             ",
-            
-            div(
-              style = "
+                
+                div(
+                  style = "
                 font-size:14px;
                 color:#555555;
                 font-weight:500;
               ",
-              textOutput("last_refresh_text")
-            )
-          )
-        ),
-        column(
-          4,
-          div(
-            style = "
+                  textOutput("last_refresh_text")
+                )
+              )
+            ),
+            column(
+              4,
+              div(
+                style = "
               height:650px;
               overflow-y:auto;
               background:#f7f9fb;
               padding:15px;
               border-radius:10px;
             ",
-            
-            div(
-              class = "sa-card sa-fade-in",
-              
-              uiOutput("selected_info_map")
+                
+                div(
+                  class = "sa-card sa-fade-in",
+                  
+                  uiOutput("selected_info_map")
+                )
+              )
             )
           )
-        )
-      )
-    ),
-    
-    
-    # SPOT TABLE TAB ----
-    
-    tabPanel(
-      "Spot Table",
-      fluidRow(
-        column(
-          5,
-          div(
-            style = "
+        ),
+        
+        
+        # SPOT TABLE TAB ----
+        
+        tabPanel(
+          "Spot Table",
+          fluidRow(
+            column(
+              5,
+              div(
+                style = "
               height:650px;
               overflow-y:auto;
               padding-right:10px;
             ",
-            div(
-              style = "max-width:1200px; margin:auto; padding-top:15px;",
-              uiOutput("burn_table_grouped")
-            )
-          )
-        ),
-        column(
-          7,
-          div(
-            style = "
+                div(
+                  style = "max-width:1200px; margin:auto; padding-top:15px;",
+                  uiOutput("burn_table_grouped")
+                )
+              )
+            ),
+            column(
+              7,
+              div(
+                style = "
               height:650px;
               overflow-y:auto;
               background:#f7f9fb;
               padding:15px;
               border-radius:10px;
             ",
-            
-            div(
-              class = "sa-card sa-fade-in",
-              
-              uiOutput("selected_info_table")
+                
+                div(
+                  class = "sa-card sa-fade-in",
+                  
+                  uiOutput("selected_info_table")
+                )
+              )
             )
           )
-        )
-      )
-    ),
-    
-    
-    # SUPERFOG RISK TAB ----
-    
-    tabPanel(
-      "Superfog Risk",
-      fluidRow(
-        column(
-          8,
-          
-          uiOutput("sfog_loading_bar"),
-          
-          div(
-            style = "position:relative;",
-            
-            uiOutput("sfog_map_loading_overlay"),
-            
-            leafletOutput(
-              "sfog_map",
-              height = "520px"
-            )
-          ),
-          
-          uiOutput("sfog_plot_container")
         ),
         
-        column(
-          4,
-          div(
-            style = "
+        
+        # SUPERFOG RISK TAB ----
+        
+        tabPanel(
+          "Superfog Risk",
+          fluidRow(
+            column(
+              8,
+              
+              uiOutput("sfog_loading_bar"),
+              
+              div(
+                style = "position:relative;",
+                
+                uiOutput("sfog_map_loading_overlay"),
+                
+                leafletOutput(
+                  "sfog_map",
+                  height = "520px"
+                )
+              ),
+              
+              uiOutput("sfog_plot_container")
+            ),
+            
+            column(
+              4,
+              div(
+                style = "
               background:#f7f9fb;
               padding:15px;
               border-radius:10px;
               height:700px;
               overflow-y:auto;
             ",
-            
-            div(
-              class = "sa-time-card",
-              
-              div(class = "sa-card-title", "Forecast Time"),
-              
-              fluidRow(
-                style = "display:flex; align-items:center;",
-                column(
-                  width = 2,
-                  actionButton(
-                    "sfog_prev_hour",
-                    label = NULL,
-                    icon = icon("chevron-left"),
-                    width = "100%",
-                    style = "
-                  height:38px;
-                  display:flex;
-                  align-items:center;
-                  justify-content:center;
-                  padding:0;
-                  font-size:22px;
-                "
-                  )
-                ),
                 
-                column(
-                  width = 8,
-                  div(
-                    class = "sfog-time-card",
+                div(
+                  class = "sa-time-card",
+                  
+                  div(class = "sa-card-title", "Forecast Time"),
+                  
+                  fluidRow(
+                    style = "display:flex; align-items:center;",
+                    column(
+                      width = 2,
+                      actionButton(
+                        "sfog_prev_hour",
+                        label = NULL,
+                        icon = icon("chevron-left"),
+                        width = "100%",
+                        style = "
+                          height:38px;
+                          display:flex;
+                          align-items:center;
+                          justify-content:center;
+                          padding:0;
+                          font-size:22px;
+                        "
+                      )
+                    ),
                     
-                    div(
-                      class = "sfog-time-card-value",
-                      textOutput("sfog_valid_time")
+                    column(
+                      width = 8,
+                      div(
+                        class = "sfog-time-card",
+                        
+                        div(
+                          class = "sfog-time-card-value",
+                          textOutput("sfog_valid_time")
+                        )
+                      )
+                    ),
+                    
+                    column(
+                      width = 2,
+                      actionButton(
+                        "sfog_next_hour",
+                        label = NULL,
+                        icon = icon("chevron-right"),
+                        width = "100%",
+                        style = "
+                          height:38px;
+                          display:flex;
+                          align-items:center;
+                          justify-content:center;
+                          padding:0;
+                          font-size:22px;
+                        "
+                      )
                     )
-                  )
+                  ),
+                  
+                  div(
+                    class = "sfog-slider-wrap",
+                    style = "
+                      width:100%;
+                      margin-top:10px;
+                      margin-bottom:10px;
+                    ",
+                    
+                    uiOutput("sfog_time_slider")
+                  ),
+                  
+                  uiOutput("sfog_cache_message")
                 ),
                 
-                column(
-                  width = 2,
+                div(
+                  class = "sa-point-card",
+                  
+                  div(class = "sa-card-title", "Point Risk Time Series"),
+                  
+                  p(
+                    class = "sa-muted",
+                    "Enter a latitude/longitude or click the map."
+                  ),
+                  
+                  textInput(
+                    "sfog_query_lat",
+                    "Latitude",
+                    value = "",
+                    placeholder = "e.g. 35.5951"
+                  ),
+                  
+                  textInput(
+                    "sfog_query_lon",
+                    "Longitude",
+                    value = "",
+                    placeholder = "e.g. -82.5515"
+                  ),
+                  
                   actionButton(
-                    "sfog_next_hour",
-                    label = NULL,
-                    icon = icon("chevron-right"),
+                    "sfog_extract_point",
+                    "Plot Point Risk",
                     width = "100%",
-                    style = "
-                  height:38px;
-                  display:flex;
-                  align-items:center;
-                  justify-content:center;
-                  padding:0;
-                  font-size:22px;
-                "
+                    class = "sa-primary-btn"
                   )
-                )
-              ),
-              
-              div(
-                class = "sfog-slider-wrap",
-                style = "
-                  width:100%;
-                  margin-top:10px;
-                  margin-bottom:10px;
-                ",
-                              
-                uiOutput("sfog_time_slider")
-              ),
-              
-              uiOutput("sfog_cache_message")
-            ),
-            
-            div(
-              class = "sa-point-card",
-              
-              div(class = "sa-card-title", "Point Risk Time Series"),
-              
-              p(
-                class = "sa-muted",
-                "Enter a latitude/longitude or click the map."
-              ),
-              
-              textInput(
-                "sfog_query_lat",
-                "Latitude",
-                value = "",
-                placeholder = "e.g. 35.5951"
-              ),
-              
-              textInput(
-                "sfog_query_lon",
-                "Longitude",
-                value = "",
-                placeholder = "e.g. -82.5515"
-              ),
-              
-              actionButton(
-                "sfog_extract_point",
-                "Plot Point Risk",
-                width = "100%",
-                class = "sa-primary-btn"
+                ),
+                div(
+                  class = "sa-sfog-sidebar-warning",
+                  
+                  div(
+                    class = "sa-sfog-sidebar-warning-label",
+                    "Warning"
+                  ),
+                  
+                  div(
+                    class = "sa-sfog-sidebar-warning-text",
+                    "This visualization is intended as a situational awareness and planning aid and should not replace NWS Spot Forecasts."
+                  )
+                ),
               )
-            ),
-            div(
-              style = "
-    margin-top:14px;
-    padding:10px 12px;
-    
-    background:#fff8e1;
-    border-left:4px solid #d97706;
-    border-radius:8px;
-    
-    font-size:13px;
-    line-height:1.45;
-    color:#5b4630;
-    
-    box-shadow:0 1px 4px rgba(0,0,0,0.05);
-  ",
-              
-              tags$div(
-                style = "
-      font-weight:800;
-      text-transform:uppercase;
-      letter-spacing:0.05em;
-      color:#92400e;
-      margin-bottom:4px;
-      font-size:11px;
-    ",
-                "WARNING"
-              ),
-              
-              "This visualization is intended as a planning aid and should not replace NWS Spot Forecasts."
             )
           )
-        )
-      )
-    ),
-    
-    
-    # ABOUT TAB ----
-    
-    tabPanel(
-      "About",
-      div(
-        style = "max-width:950px; margin:auto; font-size:16px; line-height:1.7;",
-        div(
-          class = "sa-card",
-        
-        h2("About the Spot Forecast Screening"),
-        
-        p("This tool filters the available NWS Spot Weather forecasts to those occurring on US Forest Service Southern Area National Forest System units."),
-        
-        p(HTML(
-          "The <strong>Spot Map</strong> tab provides a spatial overview of active spot forecasts issued for Southern Area units, while the <strong>Spot Table</strong> tab organizes the same forecasts by National Forest for easier review and navigation."
-        )),
-        
-        p(
-          "Forecasts issued today are displayed separately from forecasts issued yesterday, allowing users to quickly identify newly issued spot forecasts while still maintaining visibility of recent forecast activity."
         ),
         
-        p(
-          "Selecting a burn unit from either the map or table displays the associated superfog screening results and highlights forecast periods where nighttime smoke and fog concerns may be elevated."
-        ),
         
-        p(
-          HTML('Using the <a href="https://usdagcc.sharepoint.com/sites/fs-r08-sm/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Ffs%2Dr08%2Dsm%2FShared%20Documents%2FGeneral%2FGuidance%20and%20Forms%2FR8%20Smoke%20Management%20Guidelines%20%28March%202022%29%2Epdf&parent=%2Fsites%2Ffs%2Dr08%2Dsm%2FShared%20Documents%2FGeneral%2FGuidance%20and%20Forms&p=true&ga=1" target="_blank">R8 Smoke Management Guidelines</a>, each spot forecast is screened to identify weather conditions that may increase the likelihood of <strong>superfog formation</strong>. When these conditions occur, it is necessary to run a nighttime smoke dispersion model using <a href="https://piedmont.dri.edu/" target="_blank">PB Piedmont</a>.')
-        ),
+        # ABOUT TAB ----
         
-        p("The screening focuses on overnight and early morning forecast hours and evaluates four key variables:"),
-        
-        br(),
-        
-        div(
-          class = "sa-card",
-          style = "max-width:720px; margin:auto;",
-          
+        tabPanel(
+          "About",
           div(
-            class = "sa-card-title",
-            "Superfog Screening Thresholds"
-          ),
-          
-          tags$table(
-            style = "
+            style = "max-width:950px; margin:auto; font-size:16px; line-height:1.7;",
+            div(
+              class = "sa-card",
+              
+              h2("About the Spot Forecast Screening"),
+              
+              p("This tool filters the available NWS Spot Weather forecasts to those occurring on US Forest Service Southern Area National Forest System units."),
+              
+              p(HTML(
+                "The <strong>Spot Map</strong> tab provides a spatial overview of active spot forecasts issued for Southern Area units, while the <strong>Spot Table</strong> tab organizes the same forecasts by National Forest for easier review and navigation."
+              )),
+              
+              p(
+                "Forecasts issued today are displayed separately from forecasts issued yesterday, allowing users to quickly identify newly issued spot forecasts while still maintaining visibility of recent forecast activity."
+              ),
+              
+              p(
+                "Selecting a burn unit from either the map or table displays the associated superfog screening results and highlights forecast periods where nighttime smoke and fog concerns may be elevated."
+              ),
+              
+              p(
+                HTML('Using the <a href="https://usdagcc.sharepoint.com/sites/fs-r08-sm/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Ffs%2Dr08%2Dsm%2FShared%20Documents%2FGeneral%2FGuidance%20and%20Forms%2FR8%20Smoke%20Management%20Guidelines%20%28March%202022%29%2Epdf&parent=%2Fsites%2Ffs%2Dr08%2Dsm%2FShared%20Documents%2FGeneral%2FGuidance%20and%20Forms&p=true&ga=1" target="_blank">R8 Smoke Management Guidelines</a>, each spot forecast is screened to identify weather conditions that may increase the likelihood of <strong>superfog formation</strong>. When these conditions occur, it is necessary to run a nighttime smoke dispersion model using <a href="https://piedmont.dri.edu/" target="_blank">PB Piedmont</a>.')
+              ),
+              
+              p("The screening focuses on overnight and early morning forecast hours and evaluates four key variables:"),
+              
+              br(),
+              
+              div(
+                class = "sa-card",
+                style = "max-width:720px; margin:auto;",
+                
+                div(
+                  class = "sa-card-title",
+                  "Superfog Screening Thresholds"
+                ),
+                
+                tags$table(
+                  style = "
               width:100%;
               border-collapse:separate;
               border-spacing:0;
               font-size:15px;
             ",
-            
-            tags$thead(
-              tags$tr(
-                tags$th(
-                  style = "
+                  
+                  tags$thead(
+                    tags$tr(
+                      tags$th(
+                        style = "
                     padding:12px;
                     text-align:left;
                     color:#2b2f36;
                     font-weight:700;
                     border:2px solid #2b2f36;
                   ",
-                  "Variable"
-                ),
-                tags$th(
-                  style = "
+                        "Variable"
+                      ),
+                      tags$th(
+                        style = "
                     padding:12px;
                     text-align:center;
                     color:#2b2f36;
                     font-weight:700;
                     border:2px solid #2b2f36;
                   ",
-                  "Watch Out"
-                ),
-                tags$th(
-                  style = "
+                        "Watch Out"
+                      ),
+                      tags$th(
+                        style = "
                     padding:12px;
                     text-align:center;
                     color:#2b2f36;
                     font-weight:700;
                     border:2px solid #2b2f36;
                   ",
-                  "Critical"
-                )
-              )
-            ),
-            
-            tags$tbody(
-              tags$tr(
-                style = "background:#fafbfc;",
-                
-                tags$td(
-                  style = "padding:10px; font-weight:600;",
-                  "Temperature"
-                ),
-                
-                tags$td(
-                  style = "
+                        "Critical"
+                      )
+                    )
+                  ),
+                  
+                  tags$tbody(
+                    tags$tr(
+                      style = "background:#fafbfc;",
+                      
+                      tags$td(
+                        style = "padding:10px; font-weight:600;",
+                        "Temperature"
+                      ),
+                      
+                      tags$td(
+                        style = "
             background:#FFE066;
             padding:10px;
             text-align:center;
             font-weight:bold;
           ",
-                  "<70°F"
-                ),
-                
-                tags$td(
-                  style = "
+                        "<70°F"
+                      ),
+                      
+                      tags$td(
+                        style = "
             background:#C92A2A;
             color:white;
             padding:10px;
             text-align:center;
             font-weight:bold;
           ",
-                  "<55°F"
+                        "<55°F"
+                      )
+                    ),
+                    
+                    tags$tr(
+                      tags$td(
+                        style = "padding:10px; font-weight:600;",
+                        "Relative Humidity"
+                      ),
+                      
+                      tags$td(
+                        style = "
+            background:#FFE066;
+            padding:10px;
+            text-align:center;
+            font-weight:bold;
+          ",
+                        ">70%"
+                      ),
+                      
+                      tags$td(
+                        style = "
+            background:#C92A2A;
+            color:white;
+            padding:10px;
+            text-align:center;
+            font-weight:bold;
+          ",
+                        ">90%"
+                      )
+                    ),
+                    
+                    tags$tr(
+                      style = "background:#fafbfc;",
+                      
+                      tags$td(
+                        style = "padding:10px; font-weight:600;",
+                        "Surface (20 ft) Wind Speed"
+                      ),
+                      
+                      tags$td(
+                        style = "
+            background:#FFE066;
+            padding:10px;
+            text-align:center;
+            font-weight:bold;
+          ",
+                        "<7 mph"
+                      ),
+                      
+                      tags$td(
+                        style = "
+            background:#C92A2A;
+            color:white;
+            padding:10px;
+            text-align:center;
+            font-weight:bold;
+          ",
+                        "<4 mph"
+                      )
+                    ),
+                    
+                    tags$tr(
+                      tags$td(
+                        style = "padding:10px; font-weight:600;",
+                        "Cloud Cover"
+                      ),
+                      
+                      tags$td(
+                        style = "
+            background:#FFE066;
+            padding:10px;
+            text-align:center;
+            font-weight:bold;
+          ",
+                        "<60%"
+                      ),
+                      
+                      tags$td(
+                        style = "
+            background:#C92A2A;
+            color:white;
+            padding:10px;
+            text-align:center;
+            font-weight:bold;
+          ",
+                        "<40%"
+                      )
+                    )
+                  )
                 )
               ),
               
-              tags$tr(
-                tags$td(
-                  style = "padding:10px; font-weight:600;",
-                  "Relative Humidity"
-                ),
-                
-                tags$td(
-                  style = "
-            background:#FFE066;
-            padding:10px;
-            text-align:center;
-            font-weight:bold;
-          ",
-                  ">70%"
-                ),
-                
-                tags$td(
-                  style = "
-            background:#C92A2A;
-            color:white;
-            padding:10px;
-            text-align:center;
-            font-weight:bold;
-          ",
-                  ">90%"
-                )
+              br(),
+              
+              h3("How the Screening Works"),
+              
+              p(
+                HTML('If any hour meets the Watch Out or Critical thresholds for <strong>all 4 criteria</strong>, it is required to examine nighttime smoke dispersion and potential superfog formation using <a href="https://piedmont.dri.edu/" target="_blank">PB Piedmont</a>.')
               ),
               
-              tags$tr(
-                style = "background:#fafbfc;",
-                
-                tags$td(
-                  style = "padding:10px; font-weight:600;",
-                  "Surface (20 ft) Wind Speed"
-                ),
-                
-                tags$td(
-                  style = "
-            background:#FFE066;
-            padding:10px;
-            text-align:center;
-            font-weight:bold;
-          ",
-                  "<7 mph"
-                ),
-                
-                tags$td(
-                  style = "
-            background:#C92A2A;
-            color:white;
-            padding:10px;
-            text-align:center;
-            font-weight:bold;
-          ",
-                  "<4 mph"
-                )
+              p(
+                HTML('Instances where <strong>3 out of the 4 criteria</strong> are met suggest a higher level of concern and it is recommended to be conservative and run a nighttime smoke dispersion model.')
               ),
               
-              tags$tr(
-                tags$td(
-                  style = "padding:10px; font-weight:600;",
-                  "Cloud Cover"
-                ),
-                
-                tags$td(
-                  style = "
-            background:#FFE066;
-            padding:10px;
-            text-align:center;
-            font-weight:bold;
-          ",
-                  "<60%"
-                ),
-                
-                tags$td(
-                  style = "
-            background:#C92A2A;
-            color:white;
-            padding:10px;
-            text-align:center;
-            font-weight:bold;
-          ",
-                  "<40%"
-                )
-              )
-            )
-          )
-        ),
-        
-        br(),
-        
-        h3("How the Screening Works"),
-        
-        p(
-          HTML('If any hour meets the Watch Out or Critical thresholds for <strong>all 4 criteria</strong>, it is required to examine nighttime smoke dispersion and potential superfog formation using <a href="https://piedmont.dri.edu/" target="_blank">PB Piedmont</a>.')
-        ),
-        
-        p(
-          HTML('Instances where <strong>3 out of the 4 criteria</strong> are met suggest a higher level of concern and it is recommended to be conservative and run a nighttime smoke dispersion model.')
-        ),
-        
-        br(),
-        
-        div(
-          class = "sa-card",
-          style = "
+              br(),
+              
+              div(
+                class = "sa-card",
+                style = "
             max-width:750px;
             margin:auto;
           ",
-          h3(style = "margin-top:0; margin-bottom:15px;", "PB Piedmont Decision Guide"),
-          sfog_legend_box("PB Piedmont Required", "red", "#FFDADA", "All variables in Critical or Watch Out"),
-          sfog_legend_box("PB Piedmont Recommended", "orange", "#FFE8CC", "3 of 4 variables in Critical or Watch Out"),
-          sfog_legend_box("PB Piedmont Not Required", "#777777", "#D9D9D9", "<3 variables in Critical or Watch Out")
-        ),
-        
-        br(),
-        
-        h3("Update Cycle"),
-        
-        p(
-          HTML('The data is set to refresh every 30 minutes, so it may take up to 30 minutes from the time your forecast is generated to display on this site. If your forecast is still not displaying on the map, visit the <a href="https://spot.weather.gov/" target="_blank">NWS Spot Forecast</a> page and conduct a manual screening using the thresholds outlined above.')
-        ),
-        
-        
-        br(),
-        
-        ),
-        
-        hr(style = "margin-top:40px; margin-bottom:40px;"),
-        
-        div(
-          class = "sa-card",
-        
-        h2("About the Superfog Risk Visualization"),
-        
-        div(
-          style = "
+                h3(style = "margin-top:0; margin-bottom:15px;", "PB Piedmont Decision Guide"),
+                sfog_legend_box("PB Piedmont Required", "red", "#FFDADA", "All variables in Critical or Watch Out"),
+                sfog_legend_box("PB Piedmont Recommended", "orange", "#FFE8CC", "3 of 4 variables in Critical or Watch Out"),
+                sfog_legend_box("PB Piedmont Not Required", "#777777", "#D9D9D9", "<3 variables in Critical or Watch Out")
+              ),
+              
+              br(),
+              
+              h3("Update Cycle"),
+              
+              p(
+                HTML('The data is set to refresh every 30 minutes, so it may take up to 30 minutes from the time your forecast is generated to display on this site. If your forecast is still not displaying on the map, visit the <a href="https://spot.weather.gov/" target="_blank">NWS Spot Forecast</a> page and conduct a manual screening using the thresholds outlined above.')
+              ),
+              
+              
+              br(),
+              
+            ),
+            
+            hr(style = "margin-top:40px; margin-bottom:40px;"),
+            
+            div(
+              class = "sa-card",
+              
+              h2("About the Superfog Risk Visualization"),
+              
+              div(
+                style = "
     max-width:950px;
     margin:0 auto 22px auto;
     padding:16px 20px;
@@ -648,9 +632,9 @@ ui <- fluidPage(
     
     box-shadow:0 2px 8px rgba(0,0,0,0.06);
   ",
-          
-          div(
-            style = "
+                
+                div(
+                  style = "
       font-size:13px;
       font-weight:800;
       letter-spacing:0.08em;
@@ -658,95 +642,95 @@ ui <- fluidPage(
       color:#92400e;
       margin-bottom:6px;
     ",
-            "Important"
-          ),
-          
-          div(
-            style = "
+                  "Important"
+                ),
+                
+                div(
+                  style = "
       font-size:17px;
       line-height:1.5;
       color:#3b2f1c;
       font-weight:600;
     ",
-            
-            "This visualization is intended as a situational awareness and planning aid and should not replace NWS Spot Forecasts."
-          )
-        ),
-        
-        p(
-          HTML('The <strong>Superfog Risk</strong> tab provides an experimental regional visualization of hourly superfog risk conditions across the Southern Area using forecast data from the <a href="https://vlab.noaa.gov/web/mdl/ndfd" target="_blank">National Digital Forecast Database (NDFD)</a>.')
-        ),
-        
-        p(
-          "Unlike the Spot Map and Spot Table tabs, which screen individual NWS Spot Weather Forecasts, the Superfog Risk tab uses gridded forecast data to visualize the broader spatial distribution of nighttime superfog risk."
-        ),
-        
-        p(
-          "The visualization evaluates hourly forecast conditions using the same four screening variables applied in the spot forecast screening process:"
-        ),
-        
-        tags$ul(
-          tags$li("Temperature"),
-          tags$li("Relative Humidity"),
-          tags$li("Surface Wind Speed"),
-          tags$li("Cloud Cover")
-        ),
-        
-        p(
-          "Each hourly grid cell is categorized into one of three superfog risk levels:"
-        ),
-        
-        div(
-          class = "sa-card",
-          style = "
+                  
+                  "This visualization is intended as a situational awareness and planning aid and should not replace NWS Spot Forecasts."
+                )
+              ),
+              
+              p(
+                HTML('The <strong>Superfog Risk</strong> tab provides an experimental regional visualization of hourly superfog risk conditions across the Southern Area using forecast data from the <a href="https://vlab.noaa.gov/web/mdl/ndfd" target="_blank">National Digital Forecast Database (NDFD)</a>.')
+              ),
+              
+              p(
+                "Unlike the Spot Map and Spot Table tabs, which screen individual NWS Spot Weather Forecasts, the Superfog Risk tab uses gridded forecast data to visualize the broader spatial distribution of nighttime superfog risk."
+              ),
+              
+              p(
+                "The visualization evaluates hourly forecast conditions using the same four screening variables applied in the spot forecast screening process:"
+              ),
+              
+              tags$ul(
+                tags$li("Temperature"),
+                tags$li("Relative Humidity"),
+                tags$li("Surface Wind Speed"),
+                tags$li("Cloud Cover")
+              ),
+              
+              p(
+                "Each hourly grid cell is categorized into one of three superfog risk levels:"
+              ),
+              
+              div(
+                class = "sa-card",
+                style = "
             max-width:750px;
             margin:auto;
           ",
-                    
-          h3(
-            style = "margin-top:0; margin-bottom:15px;",
-            "Superfog Risk Categories"
-          ),
-          
-          sfog_legend_box(
-            "High Risk",
-            "#CA0020",
-            "#FFDADA",
-            "Most or all screening variables meet Critical thresholds"
-          ),
-          
-          sfog_legend_box(
-            "Moderate Risk",
-            "#FFB000",
-            "#FFE8CC",
-            "Multiple variables meet Watch Out or Critical thresholds"
-          ),
-          
-          sfog_legend_box(
-            "Minimal Risk",
-            "#58AFDD",
-            "#DCEEFF",
-            "Few or no variables meet superfog screening thresholds"
+                
+                h3(
+                  style = "margin-top:0; margin-bottom:15px;",
+                  "Superfog Risk Categories"
+                ),
+                
+                sfog_legend_box(
+                  "High Risk",
+                  "#CA0020",
+                  "#FFDADA",
+                  "Most or all screening variables meet Critical thresholds"
+                ),
+                
+                sfog_legend_box(
+                  "Moderate Risk",
+                  "#FFB000",
+                  "#FFE8CC",
+                  "Multiple variables meet Watch Out or Critical thresholds"
+                ),
+                
+                sfog_legend_box(
+                  "Minimal Risk",
+                  "#58AFDD",
+                  "#DCEEFF",
+                  "Few or no variables meet superfog screening thresholds"
+                )
+              ),
+              
+              br(),
+              
+              p(
+                "The map updates every 30 minutes and displays hourly forecast guidance for the next several days. Users may click the map or manually enter latitude/longitude coordinates to generate a point-based superfog risk time series."
+              ),
+              
+              br(),
+              
+              h3("Additional Resources"),
+              
+              p(
+                HTML('For more information and additional smoke management resources, please visit the <a href="https://usdagcc.sharepoint.com/sites/fs-r08-sm" target="_blank">USFS Southern Area Smoke Management Site</a>.')
+              )
+            )
           )
-        ),
-        
-        br(),
-        
-        p(
-          "The map updates every 30 minutes and displays hourly forecast guidance for the next several days. Users may click the map or manually enter latitude/longitude coordinates to generate a point-based superfog risk time series."
-        ),
-       
-        br(),
-        
-        h3("Additional Resources"),
-        
-        p(
-          HTML('For more information and additional smoke management resources, please visit the <a href="https://usdagcc.sharepoint.com/sites/fs-r08-sm" target="_blank">USFS Southern Area Smoke Management Site</a>.')
         )
-      )
-    )
   )
-)
 )
 
 
@@ -891,7 +875,7 @@ server <- function(input, output, session) {
     )
     
     x <- sfog_extract_cache()
-
+    
     
     df_extract <- x$sfog_extract_df
     
@@ -1336,7 +1320,7 @@ server <- function(input, output, session) {
       hideGroup("Yesterday") |>
       hideGroup("AQI Forecast Today") |>
       hideGroup("AQI Forecast Tomorrow")
-
+    
   }, once = TRUE)
   
   observeEvent(cache_data(), {
@@ -2059,7 +2043,7 @@ server <- function(input, output, session) {
     
     map_loading_overlay("Loading Superfog Risk map...")
   })
-
+  
 }
 
 
