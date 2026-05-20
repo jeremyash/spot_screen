@@ -11,6 +11,14 @@ library(tidyverse)
 # SETTINGS
 # -------------------------------------------------
 
+debug_url <- "https://raw.githubusercontent.com/jeremyash/sfog_vis/cache-data/cache/debug_weather_layers.rds"
+
+x <- readRDS(url(paste0(debug_url, "?t=", as.integer(Sys.time()))))
+
+names(x)
+terra::nlyr(x$temp_f)
+x$valid_times
+
 out_dir <- "debug_superfog_layers"
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
