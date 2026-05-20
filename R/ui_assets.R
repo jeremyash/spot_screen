@@ -478,29 +478,45 @@ app_theme_css <- function() {
     .sa-map-legend {
       background: rgba(255,255,255,0.94);
       backdrop-filter: blur(4px);
+    
       border: 1px solid #d9e2d9;
       border-radius: 10px;
-      padding: 11px 13px;
+    
+      padding: 14px 16px;
+    
       box-shadow: 0 3px 12px rgba(0,0,0,0.14);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      min-width: 135px;
+    
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        'Segoe UI',
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+    
+      min-width: 165px;
     }
     
     .sa-map-legend-title {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 800;
       color: #243447;
-      margin-bottom: 8px;
+    
+      margin-bottom: 10px;
     }
     
     .sa-map-legend-row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      font-weight: 600;
+    
+      gap: 10px;
+    
+      font-size: 15px;
+      font-weight: 700;
       color: #344054;
-      margin-bottom: 5px;
+    
+      margin-bottom: 7px;
     }
     
     .sa-map-legend-row:last-child {
@@ -508,13 +524,16 @@ app_theme_css <- function() {
     }
     
     .sa-map-legend-swatch {
-      width: 18px;
-      height: 12px;
-      border-radius: 3px;
-      border: 1px solid rgba(0,0,0,0.18);
-      display: inline-block;
-    }
+      width: 22px;
+      height: 15px;
     
+      border-radius: 4px;
+      border: 1px solid rgba(0,0,0,0.18);
+    
+      display: inline-block;
+    
+      flex-shrink: 0;
+    }
     .sa-map-control {
       background: rgba(255,255,255,0.94);
       backdrop-filter: blur(4px);
