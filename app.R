@@ -41,14 +41,14 @@ r8 <- st_read("region_8", quiet = TRUE) |>
 
 r8_forests$forest_id <- seq_len(nrow(r8_forests))
 
-cache_url <- "https://raw.githubusercontent.com/jeremyash/spot_screen/cache-data/cache/superfog_cache.rds"
+cache_url <- "https://raw.githubusercontent.com/jeremyash/southern-area-forecast-cache/cache-data/cache/spot_superfog_cache.rds"
 
-sfog_display_cache_url <- "https://raw.githubusercontent.com/jeremyash/sfog_vis/cache-data/cache/ndfd_superfog_display_cache.rds"
+sfog_display_cache_url <- "https://raw.githubusercontent.com/jeremyash/southern-area-forecast-cache/cache-data/cache/ndfd_superfog_display_cache.rds"
 
-sfog_extract_cache_url <- "https://raw.githubusercontent.com/jeremyash/sfog_vis/cache-data/cache/ndfd_superfog_extract_cache.rds"
+sfog_extract_cache_url <- "https://raw.githubusercontent.com/jeremyash/southern-area-forecast-cache/cache-data/cache/ndfd_superfog_extract_cache.rds"
 
 
-# INITIAL CACHE LOAD ----------------------------------------------
+# INITIAL SPOT FORECAST CACHE LOAD ----------------------------------------------
 
 initial_cache <- tryCatch(
   download_remote_cache(paste0(cache_url, "?t=", as.integer(Sys.time()))),
