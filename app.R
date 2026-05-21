@@ -32,11 +32,11 @@ source("R/ui_assets.R")
 
 # STATIC DATA AND CACHE----------------------------------------------
 
-wfo <- read_csv("r8_wfo.csv", show_col_types = FALSE)
+wfo <- read_csv("data/r8_wfo.csv", show_col_types = FALSE)
 
-r8_forests <- readRDS("r8_forests_simplified.rds")
+r8_forests <- readRDS("data/r8_forests_simplified.rds")
 
-r8 <- st_read("region_8", quiet = TRUE) |>
+r8 <- st_read("data/region_8", quiet = TRUE) |>
   st_transform(4326)
 
 r8_forests$forest_id <- seq_len(nrow(r8_forests))
