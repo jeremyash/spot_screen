@@ -25,8 +25,9 @@ deploy_dev <- function() {
   
   rsconnect::deployApp(
     appDir = ".",
-    appName = "spot-screen-dev",
-    appFiles = all_files[!exclude]
+    appName = "spot_screen",
+    appFiles = all_files[!exclude],
+    envVars = c(APP_MODE = "prod")
   )
 }
 

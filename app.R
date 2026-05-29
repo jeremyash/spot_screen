@@ -16,7 +16,7 @@ library(shinycssloaders)
 library(later)
 library(lutz)
 
-APP_MODE <- Sys.getenv("APP_MODE", unset = "dev")
+APP_MODE <- Sys.getenv("APP_MODE", unset = "prod")
 IS_DEV <- identical(APP_MODE, "dev")
 
 
